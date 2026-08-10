@@ -191,14 +191,101 @@
       line-height: 1.5;
     }
 
-    .test-note {
-      max-width: 650px;
-      margin: 20px auto;
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      padding: 15px;
+      background: rgba(0,0,0,.65);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 430px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+      color: #00338d;
+    }
+
+    .selected-list {
       padding: 12px;
-      border-radius: 8px;
+      margin-bottom: 15px;
+      border-radius: 7px;
       background: #eff6ff;
-      color: #1e40af;
-      font-size: 14px;
+      color: #00338d;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    label {
+      display: block;
+      margin-top: 13px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      margin-top: 5px;
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .button-row button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .submit-button {
+      background: #00338d;
+      color: white;
+    }
+
+    .submit-button:disabled {
+      background: #9ca3af;
+      cursor: wait;
+    }
+
+    .cancel-button {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .message {
+      margin-top: 14px;
+      color: #c60c30;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    .success-box {
+      padding: 14px;
+      border-radius: 8px;
+      background: #d1fae5;
+      color: #065f46;
+      font-weight: bold;
       line-height: 1.5;
     }
 
@@ -247,7 +334,8 @@
 
     <p class="instructions">
       Tap every green square you would like.
-      Your selected squares will turn blue.
+      Selected squares turn blue.
+      Your squares will be held for 15 minutes after you reserve them.
     </p>
 
     <div class="legend">
@@ -271,7 +359,7 @@
         class="reserve-button"
         type="button"
         disabled
-        onclick="reservationComingNext()"
+        onclick="openReservationModal()"
       >
         Select Squares
       </button>
@@ -314,12 +402,121 @@
       Refresh Board
     </button>
 
-    <div class="test-note">
-      The live board is connected.
-      Reservation and payment checkout will be connected next.
-    </div>
-
   </div>
+
+
+  <!-- RESERVATION MODAL -->
+
+  <div
+    id="reservationModal"
+    class="modal"
+  >
+    <div class="modal-content">
+
+      <h2>
+        Reserve Selected Squares
+      </h2>
+
+      <div
+        id="selectedList"
+        class="selected-list"
+      ></div>
+
+      <form id="reservationForm">
+
+        <label for="buyerName">
+          Name
+        </label>
+
+        <input
+          id="buyerName"
+          type="text"
+          required
+        >
+
+        <label for="buyerEmail">
+          Email
+        </label>
+
+        <input
+          id="buyerEmail"
+          type="email"
+          required
+        >
+
+        <label for="buyerPhone">
+          Phone
+        </label>
+
+        <input
+          id="buyerPhone"
+          type="tel"
+          required
+        >
+
+        <div
+          id="reservationMessage"
+          class="message"
+        ></div>
+
+        <div class="button-row">
+
+          <button
+            type="button"
+            class="cancel-button"
+            onclick="closeReservationModal()"
+          >
+            Cancel
+          </button>
+
+          <button
+            id="submitReservationButton"
+            type="submit"
+            class="submit-button"
+          >
+            Reserve Squares
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+
+  <!-- SUCCESS MODAL -->
+
+  <div
+    id="successModal"
+    class="modal"
+  >
+    <div class="modal-content">
+
+      <h2>
+        Squares Reserved!
+      </h2>
+
+      <div
+        id="successMessage"
+        class="success-box"
+      ></div>
+
+      <div class="button-row">
+
+        <button
+          type="button"
+          class="submit-button"
+          onclick="closeSuccessModal()"
+        >
+          Continue
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+
 
   <script>
     const PRICE_PER_SQUARE = 10;
@@ -327,10 +524,12 @@
     let currentSquares = [];
     let selectedSquares = new Set();
 
+
     document.addEventListener(
       "DOMContentLoaded",
       loadBoard
     );
+
 
     async function loadBoard() {
       const loading =
@@ -339,12 +538,14 @@
       const errorBox =
         document.getElementById("error");
 
-      loading.style.display = "block";
+      loading.style.display =
+        "block";
+
       loading.textContent =
         "Loading board...";
 
-      errorBox.style.display = "none";
-      errorBox.textContent = "";
+      errorBox.style.display =
+        "none";
 
       try {
         const response =
@@ -397,6 +598,7 @@
       }
     }
 
+
     function cleanSelectedSquares() {
       const available =
         new Set(
@@ -417,20 +619,13 @@
 
       Array
         .from(selectedSquares)
-        .forEach(
-          function(squareNumber) {
-            if (
-              !available.has(
-                squareNumber
-              )
-            ) {
-              selectedSquares.delete(
-                squareNumber
-              );
-            }
+        .forEach(function(number) {
+          if (!available.has(number)) {
+            selectedSquares.delete(number);
           }
-        );
+        });
     }
+
 
     function displayBoard() {
       const board =
@@ -448,75 +643,70 @@
             Number(b.square)
           );
         })
-        .forEach(
-          function(item) {
-            const squareNumber =
-              Number(item.square);
+        .forEach(function(item) {
 
-            const status =
-              String(
-                item.status ||
-                "Available"
-              ).toLowerCase();
+          const squareNumber =
+            Number(item.square);
 
-            const button =
-              document.createElement(
-                "button"
-              );
+          const status =
+            String(
+              item.status ||
+              "Available"
+            ).toLowerCase();
 
-            button.type = "button";
-
-            button.classList.add(
-              "square"
+          const button =
+            document.createElement(
+              "button"
             );
 
-            if (
-              status === "available" &&
-              selectedSquares.has(
-                squareNumber
-              )
-            ) {
-              button.classList.add(
-                "selected"
-              );
-            } else {
-              button.classList.add(
-                status
-              );
-            }
+          button.type =
+            "button";
 
-            button.textContent =
-              squareNumber;
+          button.classList.add(
+            "square"
+          );
 
-            button.title =
-              "Square " +
-              squareNumber +
-              ": " +
-              item.status;
+          if (
+            status === "available" &&
+            selectedSquares.has(
+              squareNumber
+            )
+          ) {
+            button.classList.add(
+              "selected"
+            );
 
-            if (
-              status === "available"
-            ) {
-              button.addEventListener(
-                "click",
-                function() {
-                  toggleSquare(
-                    squareNumber
-                  );
-                }
-              );
-            } else {
-              button.disabled = true;
-            }
-
-            board.appendChild(
-              button
+          } else {
+            button.classList.add(
+              status
             );
           }
-        );
+
+          button.textContent =
+            squareNumber;
+
+          if (
+            status === "available"
+          ) {
+            button.onclick =
+              function() {
+                toggleSquare(
+                  squareNumber
+                );
+              };
+
+          } else {
+            button.disabled = true;
+          }
+
+          board.appendChild(
+            button
+          );
+        });
 
       updateSelectionSummary();
     }
+
 
     function toggleSquare(
       squareNumber
@@ -529,6 +719,7 @@
         selectedSquares.delete(
           squareNumber
         );
+
       } else {
         selectedSquares.add(
           squareNumber
@@ -538,11 +729,12 @@
       displayBoard();
     }
 
+
     function clearSelections() {
       selectedSquares.clear();
-
       displayBoard();
     }
+
 
     function getSelectedSquares() {
       return Array
@@ -551,6 +743,7 @@
           return a - b;
         });
     }
+
 
     function updateSelectionSummary() {
       const selected =
@@ -622,11 +815,224 @@
         "inline-block";
     }
 
-    function reservationComingNext() {
-      alert(
-        "The live board is working. We are connecting the reservation and payment step next."
-      );
+
+    function openReservationModal() {
+      const selected =
+        getSelectedSquares();
+
+      if (
+        selected.length === 0
+      ) {
+        return;
+      }
+
+      const total =
+        selected.length *
+        PRICE_PER_SQUARE;
+
+      document.getElementById(
+        "selectedList"
+      ).textContent =
+        "Squares: " +
+        selected.join(", ") +
+        " — Total: $" +
+        total;
+
+      document.getElementById(
+        "reservationMessage"
+      ).textContent = "";
+
+      document.getElementById(
+        "reservationModal"
+      ).style.display =
+        "flex";
     }
+
+
+    function closeReservationModal() {
+      document.getElementById(
+        "reservationModal"
+      ).style.display =
+        "none";
+    }
+
+
+    function closeSuccessModal() {
+      document.getElementById(
+        "successModal"
+      ).style.display =
+        "none";
+
+      loadBoard();
+    }
+
+
+    document
+      .getElementById(
+        "reservationForm"
+      )
+      .addEventListener(
+        "submit",
+        async function(event) {
+
+          event.preventDefault();
+
+          const button =
+            document.getElementById(
+              "submitReservationButton"
+            );
+
+          const message =
+            document.getElementById(
+              "reservationMessage"
+            );
+
+          const squares =
+            getSelectedSquares();
+
+          button.disabled =
+            true;
+
+          button.textContent =
+            "Reserving...";
+
+          message.textContent = "";
+
+          try {
+
+            const response =
+              await fetch(
+                "/api/preseason",
+                {
+                  method: "POST",
+
+                  headers: {
+                    "Content-Type":
+                      "application/json"
+                  },
+
+                  body:
+                    JSON.stringify({
+                      action:
+                        "reserveSquares",
+
+                      data: {
+                        squares:
+                          squares,
+
+                        name:
+                          document
+                            .getElementById(
+                              "buyerName"
+                            )
+                            .value
+                            .trim(),
+
+                        email:
+                          document
+                            .getElementById(
+                              "buyerEmail"
+                            )
+                            .value
+                            .trim(),
+
+                        phone:
+                          document
+                            .getElementById(
+                              "buyerPhone"
+                            )
+                            .value
+                            .trim()
+                      }
+                    })
+                }
+              );
+
+            const result =
+              await response.json();
+
+            if (
+              !response.ok ||
+              !result.success
+            ) {
+              throw new Error(
+                result.message ||
+                "The reservation could not be completed."
+              );
+            }
+
+            closeReservationModal();
+
+            document
+              .getElementById(
+                "reservationForm"
+              )
+              .reset();
+
+            selectedSquares.clear();
+
+            document.getElementById(
+              "successMessage"
+            ).innerHTML =
+              "Squares <strong>" +
+              result.squares.join(", ") +
+              "</strong> have been reserved." +
+
+              "<br><br>Total due: <strong>$" +
+              Number(
+                result.total
+              ).toFixed(2) +
+              "</strong>" +
+
+              "<br><br>Your squares will remain pending for <strong>" +
+              result.expiresInMinutes +
+              " minutes</strong> while you complete payment.";
+
+            document.getElementById(
+              "successModal"
+            ).style.display =
+              "flex";
+
+            await loadBoard();
+
+          } catch (error) {
+
+            message.textContent =
+              error.message ||
+              String(error);
+
+            await loadBoard();
+
+          } finally {
+
+            button.disabled =
+              false;
+
+            button.textContent =
+              "Reserve Squares";
+          }
+        }
+      );
+
+
+    window.addEventListener(
+      "click",
+      function(event) {
+
+        const reservationModal =
+          document.getElementById(
+            "reservationModal"
+          );
+
+        if (
+          event.target ===
+          reservationModal
+        ) {
+          closeReservationModal();
+        }
+      }
+    );
+
   </script>
 
 </body>
