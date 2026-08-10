@@ -4,19 +4,36 @@ export default async function handler(req, res) {
   if (!SCRIPT_URL) {
     return res.status(500).json({
       success: false,
-      message: 'Preseason backend URL is not configured.'
+      message: 'PRESEASON_SCRIPT_URL is missing.'
     });
   }
 
   try {
-    if (req.method === 'GET') {
-      const action = req.query.action || 'getSquares';
+    const url =
+      SCRIPT_URL + '?action=getSquares';
 
-      const url =
-        SCRIPT_URL +
-        '?action=' +
-        encodeURIComponent(action);
+    const response = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow'
+    });
 
+    const text = await response.text();
+
+    return res.status(200).json({
+      success: true,
+      googleStatus: response.status,
+      finalUrl: response.url,
+      contentType: response.headers.get('content-type'),
+      first500Characters: text.substring(0, 500)
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || String(error)
+    });
+  }
+}
       const response = await fetch(url, {
         redirect: 'follow'
       });
