@@ -856,6 +856,117 @@ async function confirmPayPalPayment(googleToken, paymentData) {
     orderId
   };
 }
+async function savePaymentMethod(
+  googleToken,
+  paymentData
+) {
+  const email =
+    String(
+      paymentData?.email || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  const paymentMethod =
+    String(
+      paymentData?.paymentMethod || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  const squares =
+    normalizeSquareList(
+      paymentData?.squares
+    );
+
+  if (
+    paymentMethod !== "zeffy" &&
+    paymentMethod !== "venmo"
+  ) {
+    throw new Error(
+      "That payment method is not valid."
+    );
+  }
+
+  if (!email) {
+    throw new Error(
+      "Reservation email is missing."
+    );
+  }
+
+  const rows =
+    await getAllRows(
+      googleToken
+    );
+
+  const updates = [];
+
+  squares.forEach(
+    function(squareNumber) {
+      const row =
+        rows[
+          squareNumber - 1
+        ];
+
+      if (
+        normalizeStatus(
+          row[1]
+        ) !== "Pending"
+      ) {
+        throw new Error(
+          "Square " +
+          squareNumber +
+          " is no longer pending."
+        );
+      }
+
+      const reservedEmail =
+        String(
+          row[3] || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      if (
+        reservedEmail !== email
+      ) {
+        throw new Error(
+          "The reservation email does not match."
+        );
+      }
+
+      const sheetRow =
+        squareNumber + 1;
+
+      updates.push({
+        range:
+          `${SHEET_NAME}!G${sheetRow}:H${sheetRow}`,
+
+        values: [[
+          paymentMethod === "zeffy"
+            ? "Zeffy"
+            : "Venmo",
+
+          "Payment Pending"
+        ]]
+      });
+    }
+  );
+
+  await batchUpdateRows(
+    googleToken,
+    updates
+  );
+
+  return {
+    success: true,
+    paymentMethod:
+      paymentMethod,
+    squares:
+      squares
+  };
+}
+
 export default {
   async fetch(request) {
     try {
