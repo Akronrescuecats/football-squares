@@ -497,21 +497,20 @@
       Other Payment Options
     </div>
 
-    <a
-      class="payment-button zeffy"
-      href="https://www.zeffy.com/en-US/ticketing/buffalo-bills-pre-season-2026-akron-rescue-cats"
-      target="_blank"
-    >
-      Pay with Zeffy — Preferred
-    </a>
-
-    <a
-      class="payment-button venmo"
-      href="https://account.venmo.com/u/akronrescuecats"
-      target="_blank"
-    >
-      Pay with Venmo
-    </a>
+ <button
+  type="button"
+  class="payment-button zeffy"
+  onclick="choosePaymentMethod('zeffy')"
+>
+  Pay with Zeffy — Preferred
+</button>
+  <button
+  type="button"
+  class="payment-button venmo"
+  onclick="choosePaymentMethod('venmo')"
+>
+  Pay with Venmo
+</button>
 
     <div
       id="paymentStatus"
@@ -930,7 +929,100 @@ document
           "paymentModal"
         ).style.display =
           "flex";
+async function choosePaymentMethod(method) {
 
+  if (!currentReservation) {
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "Reservation information could not be found.";
+
+    return;
+  }
+
+  const paymentLinks = {
+    zeffy:
+      "https://www.zeffy.com/en-US/ticketing/buffalo-bills-pre-season-2026-akron-rescue-cats",
+
+    venmo:
+      "https://account.venmo.com/u/akronrescuecats"
+  };
+
+  const paymentUrl =
+    paymentLinks[method];
+
+  if (!paymentUrl) {
+    return;
+  }
+
+  const paymentStatus =
+    document.getElementById(
+      "paymentStatus"
+    );
+
+  paymentStatus.textContent =
+    "Saving payment method...";
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/preseason",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              action:
+                "savePaymentMethod",
+
+              data: {
+                squares:
+                  currentReservation.squares,
+
+                email:
+                  currentReservation.email,
+
+                paymentMethod:
+                  method
+              }
+            })
+        }
+      );
+
+    const result =
+      await response.json();
+
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+      throw new Error(
+        result.message ||
+        "The payment method could not be saved."
+      );
+    }
+
+    paymentStatus.textContent =
+      "Opening payment page...";
+
+    window.open(
+      paymentUrl,
+      "_blank"
+    );
+
+  } catch (error) {
+
+    paymentStatus.textContent =
+      error.message ||
+      String(error);
+  }
+}
         renderPayPalButton();
 
         await loadBoard();
