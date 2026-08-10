@@ -8,7 +8,7 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>Akron Rescue Cats Season-Long Football Squares </title>
+  <title>Akron Rescue Cats Season-Long Football Squares</title>
 
   <style>
     * {
@@ -444,30 +444,21 @@
 
     <form id="reservationForm">
 
-      <label for="buyerName">
-        Name
-      </label>
-
+      <label for="buyerName">Name</label>
       <input
         id="buyerName"
         type="text"
         required
       >
 
-      <label for="buyerEmail">
-        Email
-      </label>
-
+      <label for="buyerEmail">Email</label>
       <input
         id="buyerEmail"
         type="email"
         required
       >
 
-      <label for="buyerPhone">
-        Phone
-      </label>
-
+      <label for="buyerPhone">Phone</label>
       <input
         id="buyerPhone"
         type="tel"
@@ -617,7 +608,7 @@ async function loadBoard() {
 
     const response =
       await fetch(
-        "/api/season-Long",
+        "/api/season-long",
         {
           method: "GET",
           cache: "no-store"
@@ -991,7 +982,7 @@ document
 
         const response =
           await fetch(
-            "/api/season-Long",
+            "/api/season-long",
             {
               method: "POST",
 
@@ -1131,7 +1122,8 @@ async function choosePaymentMethod(method) {
   const paymentLinks = {
 
     zeffy:
-      "https://www.zeffy.com/en-US/ticketing/buffalo-bills-season-long-board-2026-akron-rescue-cats"
+      "https://www.zeffy.com/en-US/ticketing/buffalo-bills-season-long-board-2026-akron-rescue-cats",
+
     venmo:
       "https://account.venmo.com/u/akronrescuecats"
 
@@ -1143,11 +1135,6 @@ async function choosePaymentMethod(method) {
   if (!paymentUrl) {
     return;
   }
-
-  /*
-    Open immediately so Safari, Chrome and
-    Facebook browsers do not block the new tab.
-  */
 
   const paymentWindow =
     window.open("", "_blank");
@@ -1164,7 +1151,7 @@ async function choosePaymentMethod(method) {
 
     const response =
       await fetch(
-        "/api/season-Long",
+        "/api/season-long",
         {
           method: "POST",
 
@@ -1214,10 +1201,6 @@ async function choosePaymentMethod(method) {
         paymentUrl;
 
     } else {
-
-      /*
-        Backup if the browser blocks a new tab.
-      */
 
       window.location.href =
         paymentUrl;
@@ -1294,7 +1277,6 @@ function renderPayPalButton() {
       height: 45
     },
 
-
     createOrder:
       function(data, actions) {
 
@@ -1327,7 +1309,6 @@ function renderPayPalButton() {
         });
       },
 
-
     onApprove:
       function(data, actions) {
 
@@ -1346,7 +1327,7 @@ function renderPayPalButton() {
 
               const response =
                 await fetch(
-                  "/api/season-Long",
+                  "/api/season-long",
                   {
                     method:
                       "POST",
@@ -1416,7 +1397,6 @@ function renderPayPalButton() {
           );
       },
 
-
     onCancel:
       function() {
 
@@ -1426,7 +1406,6 @@ function renderPayPalButton() {
           "The PayPal payment was canceled. Your squares remain pending.";
 
       },
-
 
     onError:
       function(error) {
