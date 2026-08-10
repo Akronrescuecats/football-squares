@@ -666,6 +666,196 @@ async function reserveSquares(
   };
 }
 
+/*
+=====================================================
+PAYPAL
+=====================================================
+*/
+
+async function getPayPalAccessToken() {
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("PayPal credentials are missing.");
+  }
+
+  const authorization = Buffer
+    .from(clientId + ":" + clientSecret)
+    .toString("base64");
+
+  const response = await fetch(
+    "https://api-m.paypal.com/v1/oauth2/token",
+    {
+      method: "POST",
+      headers: {
+        Authorization: "Basic " + authorization,
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: "grant_type=client_credentials"
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok || !data.access_token) {
+    throw new Error("PayPal authentication failed.");
+  }
+
+  return data.access_token;
+}
+
+
+async function getPayPalOrder(orderId) {
+  const accessToken = await getPayPalAccessToken();
+
+  const response = await fetch(
+    "https://api-m.paypal.com/v2/checkout/orders/" +
+      encodeURIComponent(orderId),
+    {
+      headers: {
+        Authorization: "Bearer " + accessToken,
+        Accept: "application/json"
+      },
+      cache: "no-store"
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error("PayPal could not verify this order.");
+  }
+
+  return data;
+}
+
+
+async function confirmPayPalPayment(googleToken, paymentData) {
+  const orderId = String(paymentData?.orderId || "").trim();
+  const email = String(paymentData?.email || "")
+    .trim()
+    .toLowerCase();
+
+  const squares = normalizeSquareList(paymentData?.squares);
+
+  if (!orderId || !email) {
+    throw new Error("Payment information is incomplete.");
+  }
+
+  const rows = await getAllRows(googleToken);
+
+  const alreadyRecorded = rows.some(
+    row => String(row[8] || "") === orderId
+  );
+
+  if (alreadyRecorded) {
+    return {
+      success: true,
+      alreadyProcessed: true
+    };
+  }
+
+  squares.forEach(squareNumber => {
+    const row = rows[squareNumber - 1];
+
+    if (normalizeStatus(row[1]) !== "Pending") {
+      throw new Error(
+        "Square " + squareNumber + " is no longer pending."
+      );
+    }
+
+    if (
+      String(row[3] || "").trim().toLowerCase() !== email
+    ) {
+      throw new Error(
+        "The reservation email does not match."
+      );
+    }
+  });
+
+  const expectedTotal = squares.length * PRICE_PER_SQUARE;
+
+  const paypalOrder = await getPayPalOrder(orderId);
+
+  if (
+    String(paypalOrder.status || "").toUpperCase() !== "COMPLETED"
+  ) {
+    throw new Error("The PayPal payment is not completed.");
+  }
+
+  const purchaseUnits = Array.isArray(paypalOrder.purchase_units)
+    ? paypalOrder.purchase_units
+    : [];
+
+  let paidTotal = 0;
+
+  purchaseUnits.forEach(unit => {
+    const captures = unit?.payments?.captures;
+
+    if (!Array.isArray(captures)) return;
+
+    captures.forEach(capture => {
+      if (
+        String(capture.status || "").toUpperCase() === "COMPLETED"
+      ) {
+        if (
+          String(capture?.amount?.currency_code || "").toUpperCase() !==
+          "USD"
+        ) {
+          throw new Error(
+            "The PayPal payment currency is incorrect."
+          );
+        }
+
+        paidTotal += Number(capture?.amount?.value || 0);
+      }
+    });
+  });
+
+  if (
+    Math.round(paidTotal * 100) !==
+    Math.round(expectedTotal * 100)
+  ) {
+    throw new Error(
+      "The PayPal payment amount does not match the reservation."
+    );
+  }
+
+  const paymentDate = new Date().toISOString();
+  const updates = [];
+
+  squares.forEach(squareNumber => {
+    const row = rows[squareNumber - 1];
+    const sheetRow = squareNumber + 1;
+
+    updates.push({
+      range: `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
+      values: [[
+        "Sold",
+        row[2] || "",
+        row[3] || "",
+        row[4] || "",
+        row[5] || "",
+        "PayPal",
+        "Paid",
+        orderId,
+        PRICE_PER_SQUARE,
+        paymentDate,
+        row[11] || ""
+      ]]
+    });
+  });
+
+  await batchUpdateRows(googleToken, updates);
+
+  return {
+    success: true,
+    squares,
+    amount: expectedTotal,
+    orderId
+  };
+}
 export default {
   async fetch(request) {
     try {
@@ -719,7 +909,20 @@ export default {
             result
           );
         }
+if (
+  body.action ===
+  "confirmPayPalPayment"
+) {
+  const result =
+    await confirmPayPalPayment(
+      token,
+      body.data
+    );
 
+  return Response.json(
+    result
+  );
+}
         return Response.json(
           {
             success: false,
