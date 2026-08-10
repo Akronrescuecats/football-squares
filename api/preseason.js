@@ -1,5 +1,9 @@
 import crypto from "crypto";
 
+const HOLD_MINUTES = 15;
+const PRICE_PER_SQUARE = 10;
+const SHEET_NAME = "Squares";
+
 function base64Url(input) {
   return Buffer
     .from(input)
@@ -19,25 +23,19 @@ function getGoogleCredentials() {
     );
   }
 
-  try {
-    const credentials = JSON.parse(raw);
+  const credentials =
+    JSON.parse(raw);
 
-    if (
-      !credentials.client_email ||
-      !credentials.private_key
-    ) {
-      throw new Error(
-        "The Google credential is missing the email or private key."
-      );
-    }
-
-    return credentials;
-
-  } catch (error) {
+  if (
+    !credentials.client_email ||
+    !credentials.private_key
+  ) {
     throw new Error(
-      "The Google service account JSON could not be read."
+      "Google credentials are incomplete."
     );
   }
+
+  return credentials;
 }
 
 async function getAccessToken() {
@@ -54,21 +52,22 @@ async function getAccessToken() {
 
   const claims = {
     iss: credentials.client_email,
-
     scope:
       "https://www.googleapis.com/auth/spreadsheets",
-
     aud:
       "https://oauth2.googleapis.com/token",
-
     iat: now,
     exp: now + 3600
   };
 
   const unsignedToken =
-    base64Url(JSON.stringify(header)) +
+    base64Url(
+      JSON.stringify(header)
+    ) +
     "." +
-    base64Url(JSON.stringify(claims));
+    base64Url(
+      JSON.stringify(claims)
+    );
 
   const privateKey =
     crypto.createPrivateKey({
@@ -79,7 +78,9 @@ async function getAccessToken() {
   const signature =
     crypto.sign(
       "RSA-SHA256",
-      Buffer.from(unsignedToken),
+      Buffer.from(
+        unsignedToken
+      ),
       privateKey
     );
 
@@ -102,59 +103,101 @@ async function getAccessToken() {
         body:
           new URLSearchParams({
             grant_type:
-              "urn:ietf:params:oauth:grant-type:jwt-bearer",
-
+              "urn:ietf:params:oauth-grant-type:jwt-bearer",
             assertion: jwt
           })
       }
     );
 
-  const data =
+  let data =
     await response.json();
 
-  if (
-    !response.ok ||
-    !data.access_token
-  ) {
+  /*
+    Google requires this exact grant type.
+    If the abbreviated value above is rejected,
+    retry with the official OAuth value.
+  */
+  if (!response.ok) {
+    const retry =
+      await fetch(
+        "https://oauth2.googleapis.com/token",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/x-www-form-urlencoded"
+          },
+
+          body:
+            new URLSearchParams({
+              grant_type:
+                "urn:ietf:params:oauth:grant-type:jwt-bearer",
+              assertion: jwt
+            })
+        }
+      );
+
+    data =
+      await retry.json();
+
+    if (
+      !retry.ok ||
+      !data.access_token
+    ) {
+      throw new Error(
+        data.error_description ||
+        "Google authentication failed."
+      );
+    }
+  }
+
+  if (!data.access_token) {
     throw new Error(
-      data.error_description ||
-      "Google authentication failed."
+      "Google did not return an access token."
     );
   }
 
   return data.access_token;
 }
 
-async function getSquares() {
-  const spreadsheetId =
-    process.env.PRESEASON_SPREADSHEET_ID;
+function getSpreadsheetId() {
+  const id =
+    process.env
+      .PRESEASON_SPREADSHEET_ID;
 
-  if (!spreadsheetId) {
+  if (!id) {
     throw new Error(
       "PRESEASON_SPREADSHEET_ID is missing."
     );
   }
 
-  const token =
-    await getAccessToken();
+  return id;
+}
+
+async function getAllRows(
+  token
+) {
+  const spreadsheetId =
+    getSpreadsheetId();
 
   const range =
     encodeURIComponent(
-      "Squares!A2:C101"
+      `${SHEET_NAME}!A2:L101`
     );
 
   const url =
-    "https://sheets.googleapis.com/v4/spreadsheets/" +
-    spreadsheetId +
-    "/values/" +
-    range;
+    `https://sheets.googleapis.com/v4/spreadsheets/` +
+    `${spreadsheetId}/values/${range}`;
 
   const response =
     await fetch(url, {
       headers: {
         Authorization:
-          "Bearer " + token
-      }
+          `Bearer ${token}`
+      },
+
+      cache: "no-store"
     });
 
   const data =
@@ -170,48 +213,531 @@ async function getSquares() {
   const rows =
     data.values || [];
 
-  return rows
-    .map(function(row) {
-      return {
-        square: Number(row[0]),
-        status:
-          row[1] || "Available",
-        name:
-          row[2] || ""
-      };
-    })
-    .filter(function(item) {
-      return (
-        Number.isInteger(item.square) &&
-        item.square >= 1 &&
-        item.square <= 100
-      );
-    })
-    .sort(function(a, b) {
-      return a.square - b.square;
+  /*
+    Guarantee 100 rows in memory.
+  */
+  const normalized = [];
+
+  for (
+    let index = 0;
+    index < 100;
+    index++
+  ) {
+    const source =
+      rows[index] || [];
+
+    normalized.push([
+      source[0] || String(index + 1),
+      source[1] || "Available",
+      source[2] || "",
+      source[3] || "",
+      source[4] || "",
+      source[5] || "",
+      source[6] || "",
+      source[7] || "",
+      source[8] || "",
+      source[9] || "",
+      source[10] || "",
+      source[11] || ""
+    ]);
+  }
+
+  return normalized;
+}
+
+function normalizeStatus(
+  value
+) {
+  const status =
+    String(
+      value || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  if (status === "sold") {
+    return "Sold";
+  }
+
+  if (status === "pending") {
+    return "Pending";
+  }
+
+  return "Available";
+}
+
+function parseReservedDate(
+  value
+) {
+  if (!value) {
+    return null;
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+async function batchUpdateRows(
+  token,
+  updates
+) {
+  if (
+    !Array.isArray(updates) ||
+    updates.length === 0
+  ) {
+    return;
+  }
+
+  const spreadsheetId =
+    getSpreadsheetId();
+
+  const url =
+    `https://sheets.googleapis.com/v4/spreadsheets/` +
+    `${spreadsheetId}/values:batchUpdate`;
+
+  const response =
+    await fetch(url, {
+      method: "POST",
+
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+
+        "Content-Type":
+          "application/json"
+      },
+
+      body:
+        JSON.stringify({
+          valueInputOption:
+            "RAW",
+
+          data:
+            updates
+        })
     });
+
+  const result =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result?.error?.message ||
+      "Could not update the football squares sheet."
+    );
+  }
+
+  return result;
+}
+
+async function releaseExpiredReservations(
+  token,
+  rows
+) {
+  const now =
+    Date.now();
+
+  const updates = [];
+
+  rows.forEach(
+    function(row, index) {
+      const status =
+        normalizeStatus(
+          row[1]
+        );
+
+      if (
+        status !== "Pending"
+      ) {
+        return;
+      }
+
+      const reservedAt =
+        parseReservedDate(
+          row[5]
+        );
+
+      if (!reservedAt) {
+        return;
+      }
+
+      const minutesPassed =
+        (
+          now -
+          reservedAt.getTime()
+        ) / 60000;
+
+      if (
+        minutesPassed <
+        HOLD_MINUTES
+      ) {
+        return;
+      }
+
+      /*
+        Reset B:L.
+      */
+      row[1] = "Available";
+
+      for (
+        let column = 2;
+        column <= 11;
+        column++
+      ) {
+        row[column] = "";
+      }
+
+      const sheetRow =
+        index + 2;
+
+      updates.push({
+        range:
+          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
+
+        values: [[
+          "Available",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ]]
+      });
+    }
+  );
+
+  await batchUpdateRows(
+    token,
+    updates
+  );
+}
+
+function rowsToPublicSquares(
+  rows
+) {
+  return rows.map(
+    function(row, index) {
+      return {
+        square:
+          Number(
+            row[0] ||
+            index + 1
+          ),
+
+        status:
+          normalizeStatus(
+            row[1]
+          ),
+
+        name:
+          String(
+            row[2] || ""
+          )
+      };
+    }
+  );
+}
+
+function normalizeSquareList(
+  values
+) {
+  if (
+    !Array.isArray(values)
+  ) {
+    throw new Error(
+      "Please select at least one square."
+    );
+  }
+
+  const squares =
+    Array.from(
+      new Set(
+        values.map(
+          function(value) {
+            return Number(value);
+          }
+        )
+      )
+    )
+      .filter(
+        function(number) {
+          return (
+            Number.isInteger(number) &&
+            number >= 1 &&
+            number <= 100
+          );
+        }
+      )
+      .sort(
+        function(a, b) {
+          return a - b;
+        }
+      );
+
+  if (
+    squares.length === 0
+  ) {
+    throw new Error(
+      "Please select at least one square."
+    );
+  }
+
+  return squares;
+}
+
+async function reserveSquares(
+  token,
+  formData
+) {
+  if (!formData) {
+    throw new Error(
+      "Reservation information is missing."
+    );
+  }
+
+  const squares =
+    normalizeSquareList(
+      formData.squares
+    );
+
+  const name =
+    String(
+      formData.name || ""
+    ).trim();
+
+  const email =
+    String(
+      formData.email || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  const phone =
+    String(
+      formData.phone || ""
+    ).trim();
+
+  if (
+    !name ||
+    !email ||
+    !phone
+  ) {
+    throw new Error(
+      "Please enter your name, email, and phone number."
+    );
+  }
+
+  if (
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      .test(email)
+  ) {
+    throw new Error(
+      "Please enter a valid email address."
+    );
+  }
+
+  let rows =
+    await getAllRows(
+      token
+    );
+
+  await releaseExpiredReservations(
+    token,
+    rows
+  );
+
+  /*
+    Read once more after releasing
+    anything that expired.
+  */
+  rows =
+    await getAllRows(
+      token
+    );
+
+  const unavailable = [];
+
+  squares.forEach(
+    function(squareNumber) {
+      const row =
+        rows[
+          squareNumber - 1
+        ];
+
+      if (
+        normalizeStatus(
+          row[1]
+        ) !==
+        "Available"
+      ) {
+        unavailable.push(
+          squareNumber
+        );
+      }
+    }
+  );
+
+  if (
+    unavailable.length > 0
+  ) {
+    throw new Error(
+      "These squares are no longer available: " +
+      unavailable.join(", ") +
+      ". Please choose again."
+    );
+  }
+
+  const reservedAt =
+    new Date()
+      .toISOString();
+
+  const reservationId =
+    crypto.randomUUID();
+
+  const updates = [];
+
+  squares.forEach(
+    function(squareNumber) {
+      const sheetRow =
+        squareNumber + 1;
+
+      updates.push({
+        range:
+          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
+
+        values: [[
+          "Pending",
+          name,
+          email,
+          phone,
+          reservedAt,
+          "",
+          "Awaiting Payment",
+          "",
+          "",
+          "",
+          reservationId
+        ]]
+      });
+    }
+  );
+
+  await batchUpdateRows(
+    token,
+    updates
+  );
+
+  return {
+    success: true,
+    squares: squares,
+    name: name,
+    email: email,
+    phone: phone,
+    quantity:
+      squares.length,
+
+    pricePerSquare:
+      PRICE_PER_SQUARE,
+
+    total:
+      squares.length *
+      PRICE_PER_SQUARE,
+
+    expiresInMinutes:
+      HOLD_MINUTES,
+
+    reservationId:
+      reservationId
+  };
 }
 
 export default {
   async fetch(request) {
     try {
-      if (request.method !== "GET") {
+      const token =
+        await getAccessToken();
+
+      if (
+        request.method === "GET"
+      ) {
+        const rows =
+          await getAllRows(
+            token
+          );
+
+        await releaseExpiredReservations(
+          token,
+          rows
+        );
+
+        const refreshedRows =
+          await getAllRows(
+            token
+          );
+
+        return Response.json({
+          success: true,
+          squares:
+            rowsToPublicSquares(
+              refreshedRows
+            )
+        });
+      }
+
+      if (
+        request.method === "POST"
+      ) {
+        const body =
+          await request.json();
+
+        if (
+          body.action ===
+          "reserveSquares"
+        ) {
+          const result =
+            await reserveSquares(
+              token,
+              body.data
+            );
+
+          return Response.json(
+            result
+          );
+        }
+
         return Response.json(
           {
             success: false,
-            message: "Method not allowed."
+            message:
+              "Invalid API action."
           },
-          { status: 405 }
+          { status: 400 }
         );
       }
 
-      const squares =
-        await getSquares();
-
-      return Response.json({
-        success: true,
-        squares: squares
-      });
+      return Response.json(
+        {
+          success: false,
+          message:
+            "Method not allowed."
+        },
+        { status: 405 }
+      );
 
     } catch (error) {
       return Response.json(
