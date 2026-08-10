@@ -8,9 +8,7 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>
-    Akron Rescue Cats Preseason Football Squares
-  </title>
+  <title>Akron Rescue Cats Preseason Football Squares</title>
 
   <style>
     * {
@@ -87,7 +85,6 @@
       margin-bottom: 10px;
       color: #00338d;
       font-weight: bold;
-      line-height: 1.4;
     }
 
     button {
@@ -118,7 +115,6 @@
     .clear-button {
       margin-left: 6px;
       background: #e5e7eb;
-      color: #111827;
     }
 
     .refresh-button {
@@ -151,27 +147,20 @@
       cursor: pointer;
     }
 
-    .available:hover {
-      background: #a7f3d0;
-    }
-
     .selected {
       background: #2563eb;
       color: white;
       border-color: #00338d;
-      cursor: pointer;
     }
 
     .pending {
       background: #fef3c7;
       color: #92400e;
-      cursor: not-allowed;
     }
 
     .sold {
       background: #fecaca;
       color: #991b1b;
-      cursor: not-allowed;
     }
 
     .loading {
@@ -188,7 +177,6 @@
       border-radius: 8px;
       color: #991b1b;
       font-weight: bold;
-      line-height: 1.5;
     }
 
     .modal {
@@ -225,7 +213,6 @@
       background: #eff6ff;
       color: #00338d;
       font-weight: bold;
-      line-height: 1.5;
     }
 
     label {
@@ -263,14 +250,8 @@
       color: white;
     }
 
-    .submit-button:disabled {
-      background: #9ca3af;
-      cursor: wait;
-    }
-
     .cancel-button {
       background: #e5e7eb;
-      color: #111827;
     }
 
     .message {
@@ -280,13 +261,49 @@
       line-height: 1.5;
     }
 
-    .success-box {
-      padding: 14px;
+    .payment-note {
+      padding: 12px;
+      margin: 15px 0;
       border-radius: 8px;
-      background: #d1fae5;
-      color: #065f46;
-      font-weight: bold;
+      background: #fff7ed;
+      color: #9a3412;
       line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .payment-title {
+      margin: 18px 0 10px;
+      color: #00338d;
+      font-weight: bold;
+    }
+
+    .payment-button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 14px;
+      border: none;
+      border-radius: 7px;
+      background: #00338d;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      text-decoration: none;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .zeffy {
+      background: #00338d;
+    }
+
+    .venmo {
+      background: #2563eb;
+    }
+
+    #paypal-button-container {
+      min-height: 45px;
+      margin: 12px 0;
     }
 
     @media (max-width: 650px) {
@@ -294,17 +311,8 @@
         padding: 12px;
       }
 
-      h1 {
-        font-size: 27px;
-      }
-
-      .subtitle {
-        font-size: 19px;
-      }
-
       .board {
-        grid-template-columns:
-          repeat(5, minmax(48px, 65px));
+        grid-template-columns: repeat(5, minmax(48px, 65px));
       }
 
       .square {
@@ -316,724 +324,780 @@
 
 <body>
 
-  <div class="page">
+<div class="page">
 
-    <a class="back-link" href="/">
-      ← All Football Boards
-    </a>
+  <a class="back-link" href="/">
+    ← All Football Boards
+  </a>
 
-    <h1>Akron Rescue Cats</h1>
+  <h1>Akron Rescue Cats</h1>
 
-    <p class="subtitle">
-      Preseason Football Squares
-    </p>
+  <p class="subtitle">
+    Preseason Football Squares
+  </p>
 
-    <div class="price-line">
-      $10 per square
-    </div>
+  <div class="price-line">
+    $10 per square
+  </div>
 
-    <p class="instructions">
-      Tap every green square you would like.
-      Selected squares turn blue.
-      Your squares will be held for 15 minutes after you reserve them.
-    </p>
+  <p class="instructions">
+    Tap every green square you would like.
+    Selected squares turn blue.
+    Your squares will be held for 15 minutes after reservation.
+  </p>
 
-    <div class="legend">
-      🟩 Available &nbsp;&nbsp;
-      🟦 Selected &nbsp;&nbsp;
-      🟨 Pending &nbsp;&nbsp;
-      🟥 Sold
-    </div>
+  <div class="legend">
+    🟩 Available &nbsp;&nbsp;
+    🟦 Selected &nbsp;&nbsp;
+    🟨 Pending &nbsp;&nbsp;
+    🟥 Sold
+  </div>
 
-    <div class="selection-bar">
-
-      <div
-        id="selectionSummary"
-        class="selection-summary"
-      >
-        No squares selected
-      </div>
-
-      <button
-        id="reserveButton"
-        class="reserve-button"
-        type="button"
-        disabled
-        onclick="openReservationModal()"
-      >
-        Select Squares
-      </button>
-
-      <button
-        id="clearButton"
-        class="clear-button"
-        type="button"
-        style="display:none;"
-        onclick="clearSelections()"
-      >
-        Clear
-      </button>
-
-    </div>
+  <div class="selection-bar">
 
     <div
-      id="loading"
-      class="loading"
+      id="selectionSummary"
+      class="selection-summary"
     >
-      Loading board...
+      No squares selected
     </div>
-
-    <div
-      id="error"
-      class="error"
-      style="display:none;"
-    ></div>
-
-    <div
-      id="board"
-      class="board"
-    ></div>
 
     <button
-      type="button"
-      class="refresh-button"
-      onclick="loadBoard()"
+      id="reserveButton"
+      class="reserve-button"
+      disabled
+      onclick="openReservationModal()"
     >
-      Refresh Board
+      Select Squares
+    </button>
+
+    <button
+      id="clearButton"
+      class="clear-button"
+      style="display:none;"
+      onclick="clearSelections()"
+    >
+      Clear
     </button>
 
   </div>
 
-
-  <!-- RESERVATION MODAL -->
-
-  <div
-    id="reservationModal"
-    class="modal"
-  >
-    <div class="modal-content">
-
-      <h2>
-        Reserve Selected Squares
-      </h2>
-
-      <div
-        id="selectedList"
-        class="selected-list"
-      ></div>
-
-      <form id="reservationForm">
-
-        <label for="buyerName">
-          Name
-        </label>
-
-        <input
-          id="buyerName"
-          type="text"
-          required
-        >
-
-        <label for="buyerEmail">
-          Email
-        </label>
-
-        <input
-          id="buyerEmail"
-          type="email"
-          required
-        >
-
-        <label for="buyerPhone">
-          Phone
-        </label>
-
-        <input
-          id="buyerPhone"
-          type="tel"
-          required
-        >
-
-        <div
-          id="reservationMessage"
-          class="message"
-        ></div>
-
-        <div class="button-row">
-
-          <button
-            type="button"
-            class="cancel-button"
-            onclick="closeReservationModal()"
-          >
-            Cancel
-          </button>
-
-          <button
-            id="submitReservationButton"
-            type="submit"
-            class="submit-button"
-          >
-            Reserve Squares
-          </button>
-
-        </div>
-
-      </form>
-
-    </div>
+  <div id="loading" class="loading">
+    Loading board...
   </div>
 
-
-  <!-- SUCCESS MODAL -->
-
   <div
-    id="successModal"
-    class="modal"
-  >
-    <div class="modal-content">
+    id="error"
+    class="error"
+    style="display:none;"
+  ></div>
 
-      <h2>
-        Squares Reserved!
-      </h2>
+  <div id="board" class="board"></div>
+
+  <button
+    class="refresh-button"
+    onclick="loadBoard()"
+  >
+    Refresh Board
+  </button>
+
+</div>
+
+
+<!-- RESERVATION MODAL -->
+
+<div id="reservationModal" class="modal">
+
+  <div class="modal-content">
+
+    <h2>Reserve Selected Squares</h2>
+
+    <div
+      id="selectedList"
+      class="selected-list"
+    ></div>
+
+    <form id="reservationForm">
+
+      <label>Name</label>
+      <input id="buyerName" required>
+
+      <label>Email</label>
+      <input
+        id="buyerEmail"
+        type="email"
+        required
+      >
+
+      <label>Phone</label>
+      <input
+        id="buyerPhone"
+        type="tel"
+        required
+      >
 
       <div
-        id="successMessage"
-        class="success-box"
+        id="reservationMessage"
+        class="message"
       ></div>
 
       <div class="button-row">
 
         <button
           type="button"
-          class="submit-button"
-          onclick="closeSuccessModal()"
+          class="cancel-button"
+          onclick="closeReservationModal()"
         >
-          Continue
+          Cancel
+        </button>
+
+        <button
+          id="submitReservationButton"
+          type="submit"
+          class="submit-button"
+        >
+          Continue to Payment
         </button>
 
       </div>
 
-    </div>
+    </form>
+
   </div>
 
-
-  <script>
-    const PRICE_PER_SQUARE = 10;
-
-    let currentSquares = [];
-    let selectedSquares = new Set();
+</div>
 
 
-    document.addEventListener(
-      "DOMContentLoaded",
-      loadBoard
+<!-- PAYMENT MODAL -->
+
+<div id="paymentModal" class="modal">
+
+  <div class="modal-content">
+
+    <h2>Squares Reserved!</h2>
+
+    <div
+      id="paymentSummary"
+      class="selected-list"
+    ></div>
+
+    <div class="payment-note">
+      Your squares are being held for
+      <strong>15 minutes</strong>.
+      Please complete payment before the hold expires.
+    </div>
+
+    <div class="payment-title">
+      Pay automatically with PayPal
+    </div>
+
+    <div id="paypal-button-container"></div>
+
+    <div class="payment-title">
+      Other Payment Options
+    </div>
+
+    <a
+      class="payment-button zeffy"
+      href="https://www.zeffy.com/en-US/ticketing/buffalo-bills-pre-season-2026-akron-rescue-cats"
+      target="_blank"
+    >
+      Pay with Zeffy — Preferred
+    </a>
+
+    <a
+      class="payment-button venmo"
+      href="https://account.venmo.com/u/akronrescuecats"
+      target="_blank"
+    >
+      Pay with Venmo
+    </a>
+
+    <div
+      id="paymentStatus"
+      class="message"
+    ></div>
+
+    <div class="button-row">
+
+      <button
+        type="button"
+        class="cancel-button"
+        onclick="closePaymentModal()"
+      >
+        Close
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script src="https://www.paypal.com/sdk/js?client-id=AQ1WSxSGp7DG_e5Hvf8yvECA1ScYDu4rrKHrV3xxIYqaXl3V54Z-2N-W65IJimxAWcjd4Sn-NxPt5RZa&currency=USD&intent=capture"></script>
+
+
+<script>
+
+const PRICE_PER_SQUARE = 10;
+
+let currentSquares = [];
+let selectedSquares = new Set();
+let currentReservation = null;
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  loadBoard
+);
+
+
+async function loadBoard() {
+
+  const loading =
+    document.getElementById("loading");
+
+  const errorBox =
+    document.getElementById("error");
+
+  loading.style.display = "block";
+  errorBox.style.display = "none";
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/preseason",
+        {
+          cache: "no-store"
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (!data.success) {
+      throw new Error(data.message);
+    }
+
+    currentSquares =
+      data.squares || [];
+
+    cleanSelections();
+    displayBoard();
+
+    loading.style.display = "none";
+
+  } catch (error) {
+
+    loading.style.display = "none";
+    errorBox.style.display = "block";
+
+    errorBox.textContent =
+      error.message;
+
+  }
+}
+
+
+function cleanSelections() {
+
+  const available =
+    new Set(
+      currentSquares
+        .filter(
+          item =>
+            String(item.status)
+              .toLowerCase()
+            === "available"
+        )
+        .map(
+          item =>
+            Number(item.square)
+        )
     );
 
+  Array
+    .from(selectedSquares)
+    .forEach(number => {
 
-    async function loadBoard() {
-      const loading =
-        document.getElementById("loading");
+      if (!available.has(number)) {
+        selectedSquares.delete(number);
+      }
 
-      const errorBox =
-        document.getElementById("error");
+    });
+}
 
-      loading.style.display =
-        "block";
 
-      loading.textContent =
-        "Loading board...";
+function displayBoard() {
 
-      errorBox.style.display =
-        "none";
+  const board =
+    document.getElementById("board");
+
+  board.innerHTML = "";
+
+  currentSquares.forEach(item => {
+
+    const number =
+      Number(item.square);
+
+    const status =
+      String(
+        item.status ||
+        "Available"
+      ).toLowerCase();
+
+    const button =
+      document.createElement("button");
+
+    button.classList.add("square");
+
+    if (
+      status === "available" &&
+      selectedSquares.has(number)
+    ) {
+      button.classList.add("selected");
+
+    } else {
+      button.classList.add(status);
+    }
+
+    button.textContent = number;
+
+    if (status === "available") {
+
+      button.onclick =
+        () => toggleSquare(number);
+
+    } else {
+
+      button.disabled = true;
+
+    }
+
+    board.appendChild(button);
+
+  });
+
+  updateSelectionSummary();
+}
+
+
+function toggleSquare(number) {
+
+  if (selectedSquares.has(number)) {
+
+    selectedSquares.delete(number);
+
+  } else {
+
+    selectedSquares.add(number);
+
+  }
+
+  displayBoard();
+}
+
+
+function clearSelections() {
+
+  selectedSquares.clear();
+  displayBoard();
+}
+
+
+function getSelectedSquares() {
+
+  return Array
+    .from(selectedSquares)
+    .sort((a,b) => a-b);
+}
+
+
+function updateSelectionSummary() {
+
+  const selected =
+    getSelectedSquares();
+
+  const summary =
+    document.getElementById(
+      "selectionSummary"
+    );
+
+  const button =
+    document.getElementById(
+      "reserveButton"
+    );
+
+  const clear =
+    document.getElementById(
+      "clearButton"
+    );
+
+  if (!selected.length) {
+
+    summary.textContent =
+      "No squares selected";
+
+    button.disabled = true;
+
+    button.textContent =
+      "Select Squares";
+
+    clear.style.display = "none";
+
+    return;
+  }
+
+  const total =
+    selected.length *
+    PRICE_PER_SQUARE;
+
+  summary.textContent =
+    selected.length +
+    " selected — Total: $" +
+    total;
+
+  button.disabled = false;
+
+  button.textContent =
+    "Reserve " +
+    selected.length +
+    " ($" +
+    total +
+    ")";
+
+  clear.style.display =
+    "inline-block";
+}
+
+
+function openReservationModal() {
+
+  const squares =
+    getSelectedSquares();
+
+  if (!squares.length) {
+    return;
+  }
+
+  const total =
+    squares.length *
+    PRICE_PER_SQUARE;
+
+  document.getElementById(
+    "selectedList"
+  ).textContent =
+    "Squares: " +
+    squares.join(", ") +
+    " — Total: $" +
+    total;
+
+  document.getElementById(
+    "reservationModal"
+  ).style.display =
+    "flex";
+}
+
+
+function closeReservationModal() {
+
+  document.getElementById(
+    "reservationModal"
+  ).style.display =
+    "none";
+}
+
+
+function closePaymentModal() {
+
+  document.getElementById(
+    "paymentModal"
+  ).style.display =
+    "none";
+
+  loadBoard();
+}
+
+
+document
+  .getElementById(
+    "reservationForm"
+  )
+  .addEventListener(
+    "submit",
+    async function(event) {
+
+      event.preventDefault();
+
+      const button =
+        document.getElementById(
+          "submitReservationButton"
+        );
+
+      const message =
+        document.getElementById(
+          "reservationMessage"
+        );
+
+      button.disabled = true;
+      button.textContent =
+        "Reserving...";
+
+      message.textContent = "";
 
       try {
+
         const response =
           await fetch(
             "/api/preseason",
             {
-              method: "GET",
-              cache: "no-store"
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify({
+                  action:
+                    "reserveSquares",
+
+                  data: {
+                    squares:
+                      getSelectedSquares(),
+
+                    name:
+                      document
+                        .getElementById(
+                          "buyerName"
+                        )
+                        .value
+                        .trim(),
+
+                    email:
+                      document
+                        .getElementById(
+                          "buyerEmail"
+                        )
+                        .value
+                        .trim(),
+
+                    phone:
+                      document
+                        .getElementById(
+                          "buyerPhone"
+                        )
+                        .value
+                        .trim()
+                  }
+                })
             }
           );
 
-        const data =
+        const result =
           await response.json();
 
-        if (
-          !response.ok ||
-          !data.success
-        ) {
+        if (!result.success) {
           throw new Error(
-            data.message ||
-            "The board could not load."
+            result.message
           );
         }
 
-        currentSquares =
-          Array.isArray(data.squares)
-            ? data.squares
-            : [];
+        currentReservation =
+          result;
 
-        cleanSelectedSquares();
+        closeReservationModal();
 
-        displayBoard();
+        selectedSquares.clear();
 
-        loading.style.display =
-          "none";
+        document.getElementById(
+          "reservationForm"
+        ).reset();
+
+        document.getElementById(
+          "paymentSummary"
+        ).innerHTML =
+          "<strong>Squares:</strong> " +
+          result.squares.join(", ") +
+          "<br><strong>Total:</strong> $" +
+          Number(result.total)
+            .toFixed(2);
+
+        document.getElementById(
+          "paymentModal"
+        ).style.display =
+          "flex";
+
+        renderPayPalButton();
+
+        await loadBoard();
 
       } catch (error) {
-        loading.style.display =
-          "none";
 
-        errorBox.style.display =
-          "block";
+        message.textContent =
+          error.message;
 
-        errorBox.textContent =
-          "The board could not load: " +
-          (
-            error.message ||
-            String(error)
-          );
+      } finally {
+
+        button.disabled = false;
+
+        button.textContent =
+          "Continue to Payment";
       }
     }
+  );
 
 
-    function cleanSelectedSquares() {
-      const available =
-        new Set(
-          currentSquares
-            .filter(function(item) {
-              return (
-                String(
-                  item.status ||
-                  "Available"
-                ).toLowerCase()
-                === "available"
-              );
-            })
-            .map(function(item) {
-              return Number(item.square);
-            })
-        );
+function renderPayPalButton() {
 
-      Array
-        .from(selectedSquares)
-        .forEach(function(number) {
-          if (!available.has(number)) {
-            selectedSquares.delete(number);
-          }
-        });
-    }
-
-
-    function displayBoard() {
-      const board =
-        document.getElementById(
-          "board"
-        );
-
-      board.innerHTML = "";
-
-      currentSquares
-        .slice()
-        .sort(function(a, b) {
-          return (
-            Number(a.square) -
-            Number(b.square)
-          );
-        })
-        .forEach(function(item) {
-
-          const squareNumber =
-            Number(item.square);
-
-          const status =
-            String(
-              item.status ||
-              "Available"
-            ).toLowerCase();
-
-          const button =
-            document.createElement(
-              "button"
-            );
-
-          button.type =
-            "button";
-
-          button.classList.add(
-            "square"
-          );
-
-          if (
-            status === "available" &&
-            selectedSquares.has(
-              squareNumber
-            )
-          ) {
-            button.classList.add(
-              "selected"
-            );
-
-          } else {
-            button.classList.add(
-              status
-            );
-          }
-
-          button.textContent =
-            squareNumber;
-
-          if (
-            status === "available"
-          ) {
-            button.onclick =
-              function() {
-                toggleSquare(
-                  squareNumber
-                );
-              };
-
-          } else {
-            button.disabled = true;
-          }
-
-          board.appendChild(
-            button
-          );
-        });
-
-      updateSelectionSummary();
-    }
-
-
-    function toggleSquare(
-      squareNumber
-    ) {
-      if (
-        selectedSquares.has(
-          squareNumber
-        )
-      ) {
-        selectedSquares.delete(
-          squareNumber
-        );
-
-      } else {
-        selectedSquares.add(
-          squareNumber
-        );
-      }
-
-      displayBoard();
-    }
-
-
-    function clearSelections() {
-      selectedSquares.clear();
-      displayBoard();
-    }
-
-
-    function getSelectedSquares() {
-      return Array
-        .from(selectedSquares)
-        .sort(function(a, b) {
-          return a - b;
-        });
-    }
-
-
-    function updateSelectionSummary() {
-      const selected =
-        getSelectedSquares();
-
-      const summary =
-        document.getElementById(
-          "selectionSummary"
-        );
-
-      const reserveButton =
-        document.getElementById(
-          "reserveButton"
-        );
-
-      const clearButton =
-        document.getElementById(
-          "clearButton"
-        );
-
-      if (
-        selected.length === 0
-      ) {
-        summary.textContent =
-          "No squares selected";
-
-        reserveButton.textContent =
-          "Select Squares";
-
-        reserveButton.disabled =
-          true;
-
-        clearButton.style.display =
-          "none";
-
-        return;
-      }
-
-      const total =
-        selected.length *
-        PRICE_PER_SQUARE;
-
-      summary.textContent =
-        selected.length +
-        (
-          selected.length === 1
-            ? " square"
-            : " squares"
-        ) +
-        " selected — Total: $" +
-        total;
-
-      reserveButton.textContent =
-        "Reserve " +
-        selected.length +
-        (
-          selected.length === 1
-            ? " Square"
-            : " Squares"
-        ) +
-        " ($" +
-        total +
-        ")";
-
-      reserveButton.disabled =
-        false;
-
-      clearButton.style.display =
-        "inline-block";
-    }
-
-
-    function openReservationModal() {
-      const selected =
-        getSelectedSquares();
-
-      if (
-        selected.length === 0
-      ) {
-        return;
-      }
-
-      const total =
-        selected.length *
-        PRICE_PER_SQUARE;
-
-      document.getElementById(
-        "selectedList"
-      ).textContent =
-        "Squares: " +
-        selected.join(", ") +
-        " — Total: $" +
-        total;
-
-      document.getElementById(
-        "reservationMessage"
-      ).textContent = "";
-
-      document.getElementById(
-        "reservationModal"
-      ).style.display =
-        "flex";
-    }
-
-
-    function closeReservationModal() {
-      document.getElementById(
-        "reservationModal"
-      ).style.display =
-        "none";
-    }
-
-
-    function closeSuccessModal() {
-      document.getElementById(
-        "successModal"
-      ).style.display =
-        "none";
-
-      loadBoard();
-    }
-
-
-    document
-      .getElementById(
-        "reservationForm"
-      )
-      .addEventListener(
-        "submit",
-        async function(event) {
-
-          event.preventDefault();
-
-          const button =
-            document.getElementById(
-              "submitReservationButton"
-            );
-
-          const message =
-            document.getElementById(
-              "reservationMessage"
-            );
-
-          const squares =
-            getSelectedSquares();
-
-          button.disabled =
-            true;
-
-          button.textContent =
-            "Reserving...";
-
-          message.textContent = "";
-
-          try {
-
-            const response =
-              await fetch(
-                "/api/preseason",
-                {
-                  method: "POST",
-
-                  headers: {
-                    "Content-Type":
-                      "application/json"
-                  },
-
-                  body:
-                    JSON.stringify({
-                      action:
-                        "reserveSquares",
-
-                      data: {
-                        squares:
-                          squares,
-
-                        name:
-                          document
-                            .getElementById(
-                              "buyerName"
-                            )
-                            .value
-                            .trim(),
-
-                        email:
-                          document
-                            .getElementById(
-                              "buyerEmail"
-                            )
-                            .value
-                            .trim(),
-
-                        phone:
-                          document
-                            .getElementById(
-                              "buyerPhone"
-                            )
-                            .value
-                            .trim()
-                      }
-                    })
-                }
-              );
-
-            const result =
-              await response.json();
-
-            if (
-              !response.ok ||
-              !result.success
-            ) {
-              throw new Error(
-                result.message ||
-                "The reservation could not be completed."
-              );
-            }
-
-            closeReservationModal();
-
-            document
-              .getElementById(
-                "reservationForm"
-              )
-              .reset();
-
-            selectedSquares.clear();
-
-            document.getElementById(
-              "successMessage"
-            ).innerHTML =
-              "Squares <strong>" +
-              result.squares.join(", ") +
-              "</strong> have been reserved." +
-
-              "<br><br>Total due: <strong>$" +
-              Number(
-                result.total
-              ).toFixed(2) +
-              "</strong>" +
-
-              "<br><br>Your squares will remain pending for <strong>" +
-              result.expiresInMinutes +
-              " minutes</strong> while you complete payment.";
-
-            document.getElementById(
-              "successModal"
-            ).style.display =
-              "flex";
-
-            await loadBoard();
-
-          } catch (error) {
-
-            message.textContent =
-              error.message ||
-              String(error);
-
-            await loadBoard();
-
-          } finally {
-
-            button.disabled =
-              false;
-
-            button.textContent =
-              "Reserve Squares";
-          }
-        }
-      );
-
-
-    window.addEventListener(
-      "click",
-      function(event) {
-
-        const reservationModal =
-          document.getElementById(
-            "reservationModal"
-          );
-
-        if (
-          event.target ===
-          reservationModal
-        ) {
-          closeReservationModal();
-        }
-      }
+  const container =
+    document.getElementById(
+      "paypal-button-container"
     );
 
-  </script>
+  container.innerHTML = "";
+
+  if (!currentReservation) {
+    return;
+  }
+
+  const squares =
+    currentReservation.squares;
+
+  const total =
+    Number(
+      currentReservation.total
+    );
+
+  paypal.Buttons({
+
+    createOrder:
+      function(data, actions) {
+
+        return actions.order.create({
+
+          purchase_units: [{
+
+            description:
+              "Akron Rescue Cats Preseason Football Squares: " +
+              squares.join(", "),
+
+            amount: {
+              currency_code: "USD",
+              value:
+                total.toFixed(2)
+            }
+
+          }]
+
+        });
+      },
+
+
+    onApprove:
+      async function(data, actions) {
+
+        const paymentStatus =
+          document.getElementById(
+            "paymentStatus"
+          );
+
+        paymentStatus.textContent =
+          "Completing payment...";
+
+        try {
+
+          await actions.order.capture();
+
+          const response =
+            await fetch(
+              "/api/preseason",
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+
+                body:
+                  JSON.stringify({
+
+                    action:
+                      "confirmPayPalPayment",
+
+                    data: {
+                      orderId:
+                        data.orderID,
+
+                      squares:
+                        currentReservation.squares,
+
+                      email:
+                        currentReservation.email
+                    }
+
+                  })
+              }
+            );
+
+          const result =
+            await response.json();
+
+          if (!result.success) {
+
+            throw new Error(
+              result.message
+            );
+          }
+
+          paymentStatus.textContent =
+            "Payment completed! Your squares are sold.";
+
+          currentReservation = null;
+
+          await loadBoard();
+
+        } catch (error) {
+
+          paymentStatus.textContent =
+            "PayPal received the payment, but the board could not update: " +
+            error.message;
+
+        }
+      },
+
+
+    onCancel:
+      function() {
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent =
+          "Payment was canceled. Your squares remain pending.";
+
+      },
+
+
+    onError:
+      function() {
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent =
+          "PayPal could not complete the payment.";
+
+      }
+
+  }).render(
+    "#paypal-button-container"
+  );
+}
+
+</script>
 
 </body>
 </html>
