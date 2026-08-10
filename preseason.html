@@ -115,6 +115,7 @@
     .clear-button {
       margin-left: 6px;
       background: #e5e7eb;
+      color: #111827;
     }
 
     .refresh-button {
@@ -147,20 +148,27 @@
       cursor: pointer;
     }
 
+    .available:hover {
+      background: #a7f3d0;
+    }
+
     .selected {
       background: #2563eb;
       color: white;
       border-color: #00338d;
+      cursor: pointer;
     }
 
     .pending {
       background: #fef3c7;
       color: #92400e;
+      cursor: not-allowed;
     }
 
     .sold {
       background: #fecaca;
       color: #991b1b;
+      cursor: not-allowed;
     }
 
     .loading {
@@ -177,6 +185,7 @@
       border-radius: 8px;
       color: #991b1b;
       font-weight: bold;
+      line-height: 1.5;
     }
 
     .modal {
@@ -213,6 +222,7 @@
       background: #eff6ff;
       color: #00338d;
       font-weight: bold;
+      line-height: 1.5;
     }
 
     label {
@@ -250,8 +260,14 @@
       color: white;
     }
 
+    .submit-button:disabled {
+      background: #9ca3af;
+      cursor: wait;
+    }
+
     .cancel-button {
       background: #e5e7eb;
+      color: #111827;
     }
 
     .message {
@@ -284,11 +300,9 @@
       padding: 14px;
       border: none;
       border-radius: 7px;
-      background: #00338d;
       color: white;
       font-size: 16px;
       font-weight: bold;
-      text-decoration: none;
       text-align: center;
       cursor: pointer;
     }
@@ -309,6 +323,14 @@
     @media (max-width: 650px) {
       body {
         padding: 12px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+
+      .subtitle {
+        font-size: 19px;
       }
 
       .board {
@@ -365,6 +387,7 @@
     <button
       id="reserveButton"
       class="reserve-button"
+      type="button"
       disabled
       onclick="openReservationModal()"
     >
@@ -374,6 +397,7 @@
     <button
       id="clearButton"
       class="clear-button"
+      type="button"
       style="display:none;"
       onclick="clearSelections()"
     >
@@ -395,6 +419,7 @@
   <div id="board" class="board"></div>
 
   <button
+    type="button"
     class="refresh-button"
     onclick="loadBoard()"
   >
@@ -419,17 +444,30 @@
 
     <form id="reservationForm">
 
-      <label>Name</label>
-      <input id="buyerName" required>
+      <label for="buyerName">
+        Name
+      </label>
 
-      <label>Email</label>
+      <input
+        id="buyerName"
+        type="text"
+        required
+      >
+
+      <label for="buyerEmail">
+        Email
+      </label>
+
       <input
         id="buyerEmail"
         type="email"
         required
       >
 
-      <label>Phone</label>
+      <label for="buyerPhone">
+        Phone
+      </label>
+
       <input
         id="buyerPhone"
         type="tel"
@@ -497,20 +535,21 @@
       Other Payment Options
     </div>
 
- <button
-  type="button"
-  class="payment-button zeffy"
-  onclick="choosePaymentMethod('zeffy')"
->
-  Pay with Zeffy — Preferred
-</button>
-  <button
-  type="button"
-  class="payment-button venmo"
-  onclick="choosePaymentMethod('venmo')"
->
-  Pay with Venmo
-</button>
+    <button
+      type="button"
+      class="payment-button zeffy"
+      onclick="choosePaymentMethod('zeffy')"
+    >
+      Pay with Zeffy — Preferred
+    </button>
+
+    <button
+      type="button"
+      class="payment-button venmo"
+      onclick="choosePaymentMethod('venmo')"
+    >
+      Pay with Venmo
+    </button>
 
     <div
       id="paymentStatus"
@@ -534,6 +573,8 @@
 </div>
 
 
+<!-- PAYPAL SDK -->
+
 <script src="https://www.paypal.com/sdk/js?client-id=AQ1WSxSGp7DG_e5Hvf8yvECA1ScYDu4rrKHrV3xxIYqaXl3V54Z-2N-W65IJimxAWcjd4Sn-NxPt5RZa&currency=USD&intent=capture"></script>
 
 
@@ -552,6 +593,12 @@ document.addEventListener(
 );
 
 
+/*
+=====================================================
+LOAD BOARD
+=====================================================
+*/
+
 async function loadBoard() {
 
   const loading =
@@ -561,7 +608,10 @@ async function loadBoard() {
     document.getElementById("error");
 
   loading.style.display = "block";
+  loading.textContent = "Loading board...";
+
   errorBox.style.display = "none";
+  errorBox.textContent = "";
 
   try {
 
@@ -569,6 +619,7 @@ async function loadBoard() {
       await fetch(
         "/api/preseason",
         {
+          method: "GET",
           cache: "no-store"
         }
       );
@@ -576,12 +627,20 @@ async function loadBoard() {
     const data =
       await response.json();
 
-    if (!data.success) {
-      throw new Error(data.message);
+    if (
+      !response.ok ||
+      !data.success
+    ) {
+      throw new Error(
+        data.message ||
+        "The board could not load."
+      );
     }
 
     currentSquares =
-      data.squares || [];
+      Array.isArray(data.squares)
+        ? data.squares
+        : [];
 
     cleanSelections();
     displayBoard();
@@ -591,35 +650,47 @@ async function loadBoard() {
   } catch (error) {
 
     loading.style.display = "none";
+
     errorBox.style.display = "block";
 
     errorBox.textContent =
-      error.message;
-
+      "The board could not load: " +
+      (
+        error.message ||
+        String(error)
+      );
   }
 }
 
+
+/*
+=====================================================
+BOARD
+=====================================================
+*/
 
 function cleanSelections() {
 
   const available =
     new Set(
       currentSquares
-        .filter(
-          item =>
-            String(item.status)
-              .toLowerCase()
+        .filter(function(item) {
+          return (
+            String(
+              item.status ||
+              "Available"
+            ).toLowerCase()
             === "available"
-        )
-        .map(
-          item =>
-            Number(item.square)
-        )
+          );
+        })
+        .map(function(item) {
+          return Number(item.square);
+        })
     );
 
   Array
     .from(selectedSquares)
-    .forEach(number => {
+    .forEach(function(number) {
 
       if (!available.has(number)) {
         selectedSquares.delete(number);
@@ -636,48 +707,66 @@ function displayBoard() {
 
   board.innerHTML = "";
 
-  currentSquares.forEach(item => {
+  currentSquares
+    .slice()
+    .sort(function(a, b) {
+      return (
+        Number(a.square) -
+        Number(b.square)
+      );
+    })
+    .forEach(function(item) {
 
-    const number =
-      Number(item.square);
+      const number =
+        Number(item.square);
 
-    const status =
-      String(
-        item.status ||
-        "Available"
-      ).toLowerCase();
+      const status =
+        String(
+          item.status ||
+          "Available"
+        ).toLowerCase();
 
-    const button =
-      document.createElement("button");
+      const button =
+        document.createElement("button");
 
-    button.classList.add("square");
+      button.type = "button";
 
-    if (
-      status === "available" &&
-      selectedSquares.has(number)
-    ) {
-      button.classList.add("selected");
+      button.classList.add("square");
 
-    } else {
-      button.classList.add(status);
-    }
+      if (
+        status === "available" &&
+        selectedSquares.has(number)
+      ) {
+        button.classList.add("selected");
 
-    button.textContent = number;
+      } else {
+        button.classList.add(status);
+      }
 
-    if (status === "available") {
+      button.textContent = number;
 
-      button.onclick =
-        () => toggleSquare(number);
+      button.title =
+        "Square " +
+        number +
+        ": " +
+        item.status;
 
-    } else {
+      if (status === "available") {
 
-      button.disabled = true;
+        button.onclick =
+          function() {
+            toggleSquare(number);
+          };
 
-    }
+      } else {
 
-    board.appendChild(button);
+        button.disabled = true;
 
-  });
+      }
+
+      board.appendChild(button);
+
+    });
 
   updateSelectionSummary();
 }
@@ -702,6 +791,7 @@ function toggleSquare(number) {
 function clearSelections() {
 
   selectedSquares.clear();
+
   displayBoard();
 }
 
@@ -710,7 +800,9 @@ function getSelectedSquares() {
 
   return Array
     .from(selectedSquares)
-    .sort((a,b) => a-b);
+    .sort(function(a, b) {
+      return a - b;
+    });
 }
 
 
@@ -734,7 +826,7 @@ function updateSelectionSummary() {
       "clearButton"
     );
 
-  if (!selected.length) {
+  if (selected.length === 0) {
 
     summary.textContent =
       "No squares selected";
@@ -744,7 +836,8 @@ function updateSelectionSummary() {
     button.textContent =
       "Select Squares";
 
-    clear.style.display = "none";
+    clear.style.display =
+      "none";
 
     return;
   }
@@ -755,6 +848,11 @@ function updateSelectionSummary() {
 
   summary.textContent =
     selected.length +
+    (
+      selected.length === 1
+        ? " square"
+        : " squares"
+    ) +
     " selected — Total: $" +
     total;
 
@@ -763,6 +861,11 @@ function updateSelectionSummary() {
   button.textContent =
     "Reserve " +
     selected.length +
+    (
+      selected.length === 1
+        ? " Square"
+        : " Squares"
+    ) +
     " ($" +
     total +
     ")";
@@ -771,6 +874,12 @@ function updateSelectionSummary() {
     "inline-block";
 }
 
+
+/*
+=====================================================
+RESERVATION MODAL
+=====================================================
+*/
 
 function openReservationModal() {
 
@@ -794,6 +903,10 @@ function openReservationModal() {
     total;
 
   document.getElementById(
+    "reservationMessage"
+  ).textContent = "";
+
+  document.getElementById(
     "reservationModal"
   ).style.display =
     "flex";
@@ -809,6 +922,12 @@ function closeReservationModal() {
 }
 
 
+/*
+=====================================================
+PAYMENT MODAL
+=====================================================
+*/
+
 function closePaymentModal() {
 
   document.getElementById(
@@ -816,9 +935,19 @@ function closePaymentModal() {
   ).style.display =
     "none";
 
+  document.getElementById(
+    "paymentStatus"
+  ).textContent = "";
+
   loadBoard();
 }
 
+
+/*
+=====================================================
+RESERVE SQUARES
+=====================================================
+*/
 
 document
   .getElementById(
@@ -840,7 +969,19 @@ document
           "reservationMessage"
         );
 
+      const squares =
+        getSelectedSquares();
+
+      if (!squares.length) {
+
+        message.textContent =
+          "Please select at least one square.";
+
+        return;
+      }
+
       button.disabled = true;
+
       button.textContent =
         "Reserving...";
 
@@ -866,7 +1007,7 @@ document
 
                   data: {
                     squares:
-                      getSelectedSquares(),
+                      squares,
 
                     name:
                       document
@@ -899,9 +1040,13 @@ document
         const result =
           await response.json();
 
-        if (!result.success) {
+        if (
+          !response.ok ||
+          !result.success
+        ) {
           throw new Error(
-            result.message
+            result.message ||
+            "The reservation could not be completed."
           );
         }
 
@@ -912,26 +1057,69 @@ document
 
         selectedSquares.clear();
 
-        document.getElementById(
-          "reservationForm"
-        ).reset();
+        document
+          .getElementById(
+            "reservationForm"
+          )
+          .reset();
 
         document.getElementById(
           "paymentSummary"
         ).innerHTML =
           "<strong>Squares:</strong> " +
           result.squares.join(", ") +
+
+          "<br><strong>Price per square:</strong> $" +
+          PRICE_PER_SQUARE +
+
           "<br><strong>Total:</strong> $" +
-          Number(result.total)
-            .toFixed(2);
+          Number(
+            result.total
+          ).toFixed(2);
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent = "";
 
         document.getElementById(
           "paymentModal"
         ).style.display =
           "flex";
+
+        renderPayPalButton();
+
+        await loadBoard();
+
+      } catch (error) {
+
+        message.textContent =
+          error.message ||
+          String(error);
+
+        await loadBoard();
+
+      } finally {
+
+        button.disabled = false;
+
+        button.textContent =
+          "Continue to Payment";
+      }
+
+    }
+  );
+
+
+/*
+=====================================================
+ZEFFY / VENMO
+=====================================================
+*/
+
 async function choosePaymentMethod(method) {
 
   if (!currentReservation) {
+
     document.getElementById(
       "paymentStatus"
     ).textContent =
@@ -941,11 +1129,13 @@ async function choosePaymentMethod(method) {
   }
 
   const paymentLinks = {
+
     zeffy:
       "https://www.zeffy.com/en-US/ticketing/buffalo-bills-pre-season-2026-akron-rescue-cats",
 
     venmo:
       "https://account.venmo.com/u/akronrescuecats"
+
   };
 
   const paymentUrl =
@@ -954,6 +1144,14 @@ async function choosePaymentMethod(method) {
   if (!paymentUrl) {
     return;
   }
+
+  /*
+    Open immediately so Safari, Chrome and
+    Facebook browsers do not block the new tab.
+  */
+
+  const paymentWindow =
+    window.open("", "_blank");
 
   const paymentStatus =
     document.getElementById(
@@ -1011,37 +1209,39 @@ async function choosePaymentMethod(method) {
     paymentStatus.textContent =
       "Opening payment page...";
 
-    window.open(
-      paymentUrl,
-      "_blank"
-    );
+    if (paymentWindow) {
+
+      paymentWindow.location.href =
+        paymentUrl;
+
+    } else {
+
+      /*
+        Backup if the browser blocks a new tab.
+      */
+
+      window.location.href =
+        paymentUrl;
+    }
 
   } catch (error) {
+
+    if (paymentWindow) {
+      paymentWindow.close();
+    }
 
     paymentStatus.textContent =
       error.message ||
       String(error);
   }
 }
-        renderPayPalButton();
 
-        await loadBoard();
 
-      } catch (error) {
-
-        message.textContent =
-          error.message;
-
-      } finally {
-
-        button.disabled = false;
-
-        button.textContent =
-          "Continue to Payment";
-      }
-    }
-  );
-
+/*
+=====================================================
+PAYPAL
+=====================================================
+*/
 
 function renderPayPalButton() {
 
@@ -1053,11 +1253,33 @@ function renderPayPalButton() {
   container.innerHTML = "";
 
   if (!currentReservation) {
+
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "Reservation information could not be found.";
+
+    return;
+  }
+
+  if (
+    typeof paypal ===
+    "undefined"
+  ) {
+
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "PayPal could not load. Please refresh and try again.";
+
     return;
   }
 
   const squares =
-    currentReservation.squares;
+    currentReservation.squares.slice();
+
+  const reservationEmail =
+    currentReservation.email;
 
   const total =
     Number(
@@ -1066,10 +1288,25 @@ function renderPayPalButton() {
 
   paypal.Buttons({
 
+    style: {
+      layout: "vertical",
+      shape: "rect",
+      label: "paypal",
+      height: 45
+    },
+
+
     createOrder:
       function(data, actions) {
 
+        document.getElementById(
+          "paymentStatus"
+        ).textContent = "";
+
         return actions.order.create({
+
+          intent:
+            "CAPTURE",
 
           purchase_units: [{
 
@@ -1078,7 +1315,10 @@ function renderPayPalButton() {
               squares.join(", "),
 
             amount: {
-              currency_code: "USD",
+
+              currency_code:
+                "USD",
+
               value:
                 total.toFixed(2)
             }
@@ -1090,7 +1330,7 @@ function renderPayPalButton() {
 
 
     onApprove:
-      async function(data, actions) {
+      function(data, actions) {
 
         const paymentStatus =
           document.getElementById(
@@ -1100,66 +1340,81 @@ function renderPayPalButton() {
         paymentStatus.textContent =
           "Completing payment...";
 
-        try {
+        return actions.order
+          .capture()
+          .then(
+            async function() {
 
-          await actions.order.capture();
+              const response =
+                await fetch(
+                  "/api/preseason",
+                  {
+                    method:
+                      "POST",
 
-          const response =
-            await fetch(
-              "/api/preseason",
-              {
-                method: "POST",
+                    headers: {
+                      "Content-Type":
+                        "application/json"
+                    },
 
-                headers: {
-                  "Content-Type":
-                    "application/json"
-                },
+                    body:
+                      JSON.stringify({
 
-                body:
-                  JSON.stringify({
+                        action:
+                          "confirmPayPalPayment",
 
-                    action:
-                      "confirmPayPalPayment",
+                        data: {
 
-                    data: {
-                      orderId:
-                        data.orderID,
+                          orderId:
+                            data.orderID,
 
-                      squares:
-                        currentReservation.squares,
+                          squares:
+                            squares,
 
-                      email:
-                        currentReservation.email
-                    }
+                          email:
+                            reservationEmail
+                        }
 
-                  })
+                      })
+                  }
+                );
+
+              const result =
+                await response.json();
+
+              if (
+                !response.ok ||
+                !result.success
+              ) {
+
+                throw new Error(
+                  result.message ||
+                  "The board could not confirm the PayPal payment."
+                );
               }
-            );
 
-          const result =
-            await response.json();
+              paymentStatus.textContent =
+                "Payment completed! Your squares are now sold.";
 
-          if (!result.success) {
+              currentReservation =
+                null;
 
-            throw new Error(
-              result.message
-            );
-          }
+              selectedSquares.clear();
 
-          paymentStatus.textContent =
-            "Payment completed! Your squares are sold.";
+              await loadBoard();
+            }
+          )
+          .catch(
+            function(error) {
 
-          currentReservation = null;
-
-          await loadBoard();
-
-        } catch (error) {
-
-          paymentStatus.textContent =
-            "PayPal received the payment, but the board could not update: " +
-            error.message;
-
-        }
+              paymentStatus.textContent =
+                "PayPal received the payment, but the board could not update: " +
+                (
+                  error.message ||
+                  String(error)
+                );
+            }
+          );
       },
 
 
@@ -1169,18 +1424,20 @@ function renderPayPalButton() {
         document.getElementById(
           "paymentStatus"
         ).textContent =
-          "Payment was canceled. Your squares remain pending.";
+          "The PayPal payment was canceled. Your squares remain pending.";
 
       },
 
 
     onError:
-      function() {
+      function(error) {
+
+        console.error(error);
 
         document.getElementById(
           "paymentStatus"
         ).textContent =
-          "PayPal could not complete the payment.";
+          "PayPal could not complete the payment. Please try again.";
 
       }
 
@@ -1188,6 +1445,44 @@ function renderPayPalButton() {
     "#paypal-button-container"
   );
 }
+
+
+/*
+=====================================================
+CLOSE MODALS BY CLICKING BACKGROUND
+=====================================================
+*/
+
+window.addEventListener(
+  "click",
+  function(event) {
+
+    const reservationModal =
+      document.getElementById(
+        "reservationModal"
+      );
+
+    const paymentModal =
+      document.getElementById(
+        "paymentModal"
+      );
+
+    if (
+      event.target ===
+      reservationModal
+    ) {
+      closeReservationModal();
+    }
+
+    if (
+      event.target ===
+      paymentModal
+    ) {
+      closePaymentModal();
+    }
+
+  }
+);
 
 </script>
 
