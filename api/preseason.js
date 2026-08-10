@@ -1034,6 +1034,21 @@ if (
     result
   );
 }
+
+        if (
+  body.action ===
+  "savePaymentMethod"
+) {
+  const result =
+    await savePaymentMethod(
+      token,
+      body.data
+    );
+
+  return Response.json(
+    result
+  );
+}
         return Response.json(
           {
             success: false,
