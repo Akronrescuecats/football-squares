@@ -1,96 +1,112 @@
-export default async function handler(req, res) {
-  const SCRIPT_URL = process.env.PRESEASON_SCRIPT_URL;
+export default {
+  async fetch(request) {
+    const SCRIPT_URL = process.env.PRESEASON_SCRIPT_URL;
 
-  if (!SCRIPT_URL) {
-    return res.status(500).json({
-      success: false,
-      message: 'PRESEASON_SCRIPT_URL is missing.'
-    });
-  }
-
-  try {
-    const url =
-      SCRIPT_URL + '?action=getSquares';
-
-    const response = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow'
-    });
-
-    const text = await response.text();
-
-    return res.status(200).json({
-      success: true,
-      googleStatus: response.status,
-      finalUrl: response.url,
-      contentType: response.headers.get('content-type'),
-      first500Characters: text.substring(0, 500)
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message || String(error)
-    });
-  }
-}
-      const response = await fetch(url, {
-        redirect: 'follow'
-      });
-
-      const text = await response.text();
-
-      let data;
-
-      try {
-        data = JSON.parse(text);
-      } catch (error) {
-        return res.status(502).json({
+    if (!SCRIPT_URL) {
+      return Response.json(
+        {
           success: false,
-          message: 'Google returned an invalid response.'
-        });
-      }
-
-      return res.status(200).json(data);
-    }
-
-    if (req.method === 'POST') {
-      const response = await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain;charset=utf-8'
+          message: 'PRESEASON_SCRIPT_URL is missing.'
         },
-        body: JSON.stringify(req.body),
-        redirect: 'follow'
-      });
-
-      const text = await response.text();
-
-      let data;
-
-      try {
-        data = JSON.parse(text);
-      } catch (error) {
-        return res.status(502).json({
-          success: false,
-          message: 'Google returned an invalid response.'
-        });
-      }
-
-      return res.status(200).json(data);
+        { status: 500 }
+      );
     }
 
-    return res.status(405).json({
-      success: false,
-      message: 'Method not allowed.'
-    });
+    try {
+      const url = new URL(request.url);
 
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message:
-        error.message ||
-        'The preseason board could not connect.'
-    });
+      if (request.method === 'GET') {
+        const action =
+          url.searchParams.get('action') || 'getSquares';
+
+        const googleUrl =
+          SCRIPT_URL +
+          '?action=' +
+          encodeURIComponent(action);
+
+        const googleResponse = await fetch(googleUrl, {
+          redirect: 'follow'
+        });
+
+        const text = await googleResponse.text();
+
+        try {
+          const data = JSON.parse(text);
+
+          return Response.json(data, {
+            status: 200
+          });
+        } catch (error) {
+          return Response.json(
+            {
+              success: false,
+              message: 'Google returned an invalid response.',
+              googleStatus: googleResponse.status,
+              contentType:
+                googleResponse.headers.get('content-type'),
+              first500Characters:
+                text.substring(0, 500)
+            },
+            { status: 502 }
+          );
+        }
+      }
+
+      if (request.method === 'POST') {
+        const body = await request.text();
+
+        const googleResponse = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+          },
+          body: body,
+          redirect: 'follow'
+        });
+
+        const text = await googleResponse.text();
+
+        try {
+          const data = JSON.parse(text);
+
+          return Response.json(data, {
+            status: 200
+          });
+        } catch (error) {
+          return Response.json(
+            {
+              success: false,
+              message: 'Google returned an invalid response.',
+              googleStatus: googleResponse.status,
+              contentType:
+                googleResponse.headers.get('content-type'),
+              first500Characters:
+                text.substring(0, 500)
+            },
+            { status: 502 }
+          );
+        }
+      }
+
+      return Response.json(
+        {
+          success: false,
+          message: 'Method not allowed.'
+        },
+        { status: 405 }
+      );
+
+    } catch (error) {
+      return Response.json(
+        {
+          success: false,
+          message:
+            error && error.message
+              ? error.message
+              : String(error)
+        },
+        { status: 500 }
+      );
+    }
   }
-}
+};
