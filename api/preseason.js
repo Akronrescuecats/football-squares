@@ -9,70 +9,120 @@ function base64Url(input) {
     .replace(/\//g, "_");
 }
 
-async function getAccessToken() {
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+function getGoogleCredentials() {
+  const raw =
+    process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
-  if (!email || !privateKey) {
-    throw new Error("Google service account credentials are missing.");
+  if (!raw) {
+    throw new Error(
+      "GOOGLE_SERVICE_ACCOUNT_JSON is missing."
+    );
   }
 
-  const now = Math.floor(Date.now() / 1000);
+  try {
+    const credentials = JSON.parse(raw);
+
+    if (
+      !credentials.client_email ||
+      !credentials.private_key
+    ) {
+      throw new Error(
+        "The Google credential is missing the email or private key."
+      );
+    }
+
+    return credentials;
+
+  } catch (error) {
+    throw new Error(
+      "The Google service account JSON could not be read."
+    );
+  }
+}
+
+async function getAccessToken() {
+  const credentials =
+    getGoogleCredentials();
+
+  const now =
+    Math.floor(Date.now() / 1000);
 
   const header = {
     alg: "RS256",
     typ: "JWT"
   };
 
-  const claimSet = {
-    iss: email,
-    scope: "https://www.googleapis.com/auth/spreadsheets",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600,
-    iat: now
+  const claims = {
+    iss: credentials.client_email,
+
+    scope:
+      "https://www.googleapis.com/auth/spreadsheets",
+
+    aud:
+      "https://oauth2.googleapis.com/token",
+
+    iat: now,
+    exp: now + 3600
   };
 
   const unsignedToken =
     base64Url(JSON.stringify(header)) +
     "." +
-    base64Url(JSON.stringify(claimSet));
+    base64Url(JSON.stringify(claims));
 
-  const signer = crypto.createSign("RSA-SHA256");
-  signer.update(unsignedToken);
-  signer.end();
+  const privateKey =
+    crypto.createPrivateKey({
+      key: credentials.private_key,
+      format: "pem"
+    });
 
-  const signature = signer.sign(privateKey);
+  const signature =
+    crypto.sign(
+      "RSA-SHA256",
+      Buffer.from(unsignedToken),
+      privateKey
+    );
 
   const jwt =
     unsignedToken +
     "." +
     base64Url(signature);
 
-  const tokenResponse = await fetch(
-    "https://oauth2.googleapis.com/token",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: new URLSearchParams({
-        grant_type:
-          "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        assertion: jwt
-      })
-    }
-  );
+  const response =
+    await fetch(
+      "https://oauth2.googleapis.com/token",
+      {
+        method: "POST",
 
-  const tokenData = await tokenResponse.json();
+        headers: {
+          "Content-Type":
+            "application/x-www-form-urlencoded"
+        },
 
-  if (!tokenResponse.ok || !tokenData.access_token) {
+        body:
+          new URLSearchParams({
+            grant_type:
+              "urn:ietf:params:oauth:grant-type:jwt-bearer",
+
+            assertion: jwt
+          })
+      }
+    );
+
+  const data =
+    await response.json();
+
+  if (
+    !response.ok ||
+    !data.access_token
+  ) {
     throw new Error(
-      tokenData.error_description ||
-      "Could not authenticate with Google."
+      data.error_description ||
+      "Google authentication failed."
     );
   }
 
-  return tokenData.access_token;
+  return data.access_token;
 }
 
 async function getSquares() {
@@ -85,23 +135,30 @@ async function getSquares() {
     );
   }
 
-  const accessToken = await getAccessToken();
+  const token =
+    await getAccessToken();
 
-  const range = encodeURIComponent(
-    "Squares!A2:C101"
-  );
+  const range =
+    encodeURIComponent(
+      "Squares!A2:C101"
+    );
 
   const url =
-    `https://sheets.googleapis.com/v4/spreadsheets/` +
-    `${spreadsheetId}/values/${range}`;
+    "https://sheets.googleapis.com/v4/spreadsheets/" +
+    spreadsheetId +
+    "/values/" +
+    range;
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`
-    }
-  });
+  const response =
+    await fetch(url, {
+      headers: {
+        Authorization:
+          "Bearer " + token
+      }
+    });
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!response.ok) {
     throw new Error(
@@ -110,14 +167,17 @@ async function getSquares() {
     );
   }
 
-  const rows = data.values || [];
+  const rows =
+    data.values || [];
 
   return rows
     .map(function(row) {
       return {
         square: Number(row[0]),
-        status: row[1] || "Available",
-        name: row[2] || ""
+        status:
+          row[1] || "Available",
+        name:
+          row[2] || ""
       };
     })
     .filter(function(item) {
@@ -145,7 +205,8 @@ export default {
         );
       }
 
-      const squares = await getSquares();
+      const squares =
+        await getSquares();
 
       return Response.json({
         success: true,
