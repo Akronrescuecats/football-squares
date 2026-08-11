@@ -730,7 +730,506 @@ async function getPayPalOrder(orderId) {
   return data;
 }
 
+/*
+=====================================================
+SAFE SERVER-SIDE PAYPAL CREATE + CAPTURE
+=====================================================
+*/
 
+async function validatePayPalReservation(
+  googleToken,
+  paymentData
+) {
+  const email =
+    String(
+      paymentData?.email || ""
+    )
+      .trim()
+      .toLowerCase();
+
+  const reservationId =
+    String(
+      paymentData?.reservationId || ""
+    ).trim();
+
+  const squares =
+    normalizeSquareList(
+      paymentData?.squares
+    );
+
+  if (!email || !reservationId) {
+    throw new Error(
+      "PayPal reservation information is incomplete."
+    );
+  }
+
+  const rows =
+    await getAllRows(
+      googleToken
+    );
+
+  squares.forEach(
+    function(squareNumber) {
+
+      const row =
+        rows[
+          squareNumber - 1
+        ];
+
+      if (
+        normalizeStatus(
+          row[1]
+        ) !== "Pending"
+      ) {
+        throw new Error(
+          "Square " +
+          squareNumber +
+          " is no longer pending."
+        );
+      }
+
+      const reservedEmail =
+        String(
+          row[3] || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      if (
+        reservedEmail !== email
+      ) {
+        throw new Error(
+          "The reservation email does not match."
+        );
+      }
+
+      const savedReservationId =
+        String(
+          row[11] || ""
+        ).trim();
+
+      if (
+        savedReservationId !==
+        reservationId
+      ) {
+        throw new Error(
+          "The reservation ID does not match."
+        );
+      }
+    }
+  );
+
+  return {
+    rows:
+      rows,
+
+    squares:
+      squares,
+
+    email:
+      email,
+
+    reservationId:
+      reservationId,
+
+    total:
+      squares.length *
+      PRICE_PER_SQUARE
+  };
+}
+
+
+async function createPayPalOrder(
+  googleToken,
+  paymentData
+) {
+  const reservation =
+    await validatePayPalReservation(
+      googleToken,
+      paymentData
+    );
+
+  const accessToken =
+    await getPayPalAccessToken();
+
+  const requestId =
+    "create-" +
+    reservation.reservationId;
+
+  const response =
+    await fetch(
+      "https://api-m.paypal.com/v2/checkout/orders",
+      {
+        method:
+          "POST",
+
+        headers: {
+          Authorization:
+            "Bearer " +
+            accessToken,
+
+          "Content-Type":
+            "application/json",
+
+          "PayPal-Request-Id":
+            requestId,
+
+          Prefer:
+            "return=representation"
+        },
+
+        body:
+          JSON.stringify({
+            intent:
+              "CAPTURE",
+
+            purchase_units: [
+              {
+                custom_id:
+                  reservation.reservationId,
+
+                description:
+                  "Akron Rescue Cats Preseason Football Squares: " +
+                  reservation.squares.join(", "),
+
+                amount: {
+                  currency_code:
+                    "USD",
+
+                  value:
+                    reservation.total.toFixed(2)
+                }
+              }
+            ]
+          })
+      }
+    );
+
+  const data =
+    await response.json();
+
+  if (
+    !response.ok ||
+    !data.id
+  ) {
+    throw new Error(
+      data?.message ||
+      "PayPal could not create the order."
+    );
+  }
+
+  return {
+    success: true,
+
+    orderId:
+      data.id
+  };
+}
+
+
+function verifyCompletedPayPalOrder(
+  paypalOrder,
+  expectedTotal,
+  reservationId
+) {
+  if (
+    String(
+      paypalOrder?.status || ""
+    ).toUpperCase() !==
+    "COMPLETED"
+  ) {
+    throw new Error(
+      "The PayPal payment is not completed."
+    );
+  }
+
+  const purchaseUnits =
+    Array.isArray(
+      paypalOrder.purchase_units
+    )
+      ? paypalOrder.purchase_units
+      : [];
+
+  let paidTotal = 0;
+  let reservationMatches = false;
+
+  purchaseUnits.forEach(
+    function(unit) {
+
+      if (
+        String(
+          unit.custom_id || ""
+        ) ===
+        reservationId
+      ) {
+        reservationMatches = true;
+      }
+
+      const captures =
+        unit?.payments?.captures;
+
+      if (
+        !Array.isArray(
+          captures
+        )
+      ) {
+        return;
+      }
+
+      captures.forEach(
+        function(capture) {
+
+          if (
+            String(
+              capture.status || ""
+            ).toUpperCase() !==
+            "COMPLETED"
+          ) {
+            return;
+          }
+
+          const currency =
+            String(
+              capture
+                ?.amount
+                ?.currency_code ||
+              ""
+            ).toUpperCase();
+
+          if (
+            currency !== "USD"
+          ) {
+            throw new Error(
+              "The PayPal payment currency is incorrect."
+            );
+          }
+
+          paidTotal +=
+            Number(
+              capture
+                ?.amount
+                ?.value ||
+              0
+            );
+        }
+      );
+    }
+  );
+
+  if (!reservationMatches) {
+    throw new Error(
+      "The PayPal payment does not match this reservation."
+    );
+  }
+
+  if (
+    Math.round(
+      paidTotal * 100
+    ) !==
+    Math.round(
+      expectedTotal * 100
+    )
+  ) {
+    throw new Error(
+      "The PayPal payment amount does not match the reservation."
+    );
+  }
+}
+
+
+async function capturePayPalOrder(
+  googleToken,
+  paymentData
+) {
+  const orderId =
+    String(
+      paymentData?.orderId || ""
+    ).trim();
+
+  if (!orderId) {
+    throw new Error(
+      "The PayPal order ID is missing."
+    );
+  }
+
+  const reservation =
+    await validatePayPalReservation(
+      googleToken,
+      paymentData
+    );
+
+  /*
+    If this PayPal order was already recorded,
+    do not process it again.
+  */
+
+  const alreadyRecorded =
+    reservation.rows.some(
+      function(row) {
+        return (
+          String(
+            row[8] || ""
+          ) === orderId
+        );
+      }
+    );
+
+  if (alreadyRecorded) {
+    return {
+      success: true,
+      alreadyProcessed: true,
+      orderId:
+        orderId
+    };
+  }
+
+  const accessToken =
+    await getPayPalAccessToken();
+
+  /*
+    Same reservation always gets the same
+    capture request ID. This is our
+    duplicate-charge protection.
+  */
+
+  const requestId =
+    "capture-" +
+    reservation.reservationId;
+
+  const response =
+    await fetch(
+      "https://api-m.paypal.com/v2/checkout/orders/" +
+      encodeURIComponent(
+        orderId
+      ) +
+      "/capture",
+      {
+        method:
+          "POST",
+
+        headers: {
+          Authorization:
+            "Bearer " +
+            accessToken,
+
+          "Content-Type":
+            "application/json",
+
+          "PayPal-Request-Id":
+            requestId,
+
+          Prefer:
+            "return=representation"
+        },
+
+        body:
+          JSON.stringify({})
+      }
+    );
+
+  let paypalOrder =
+    await response.json();
+
+  /*
+    If PayPal says the capture request
+    was already handled, retrieve the
+    existing order rather than attempting
+    another charge.
+  */
+
+  if (!response.ok) {
+
+    const existingOrder =
+      await getPayPalOrder(
+        orderId
+      );
+
+    if (
+      String(
+        existingOrder?.status ||
+        ""
+      ).toUpperCase() ===
+      "COMPLETED"
+    ) {
+      paypalOrder =
+        existingOrder;
+
+    } else {
+      throw new Error(
+        paypalOrder?.message ||
+        "PayPal could not capture the payment."
+      );
+    }
+  }
+
+  verifyCompletedPayPalOrder(
+    paypalOrder,
+    reservation.total,
+    reservation.reservationId
+  );
+
+  const paymentDate =
+    new Date()
+      .toISOString();
+
+  const updates = [];
+
+  reservation.squares.forEach(
+    function(squareNumber) {
+
+      const row =
+        reservation.rows[
+          squareNumber - 1
+        ];
+
+      const sheetRow =
+        squareNumber + 1;
+
+      /*
+        Update ALL payment fields together:
+        Sold + PayPal + Paid + Order ID +
+        Amount + Payment Date.
+      */
+
+      updates.push({
+        range:
+          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
+
+        values: [[
+          "Sold",
+          row[2] || "",
+          row[3] || "",
+          row[4] || "",
+          row[5] || "",
+          "PayPal",
+          "Paid",
+          orderId,
+          PRICE_PER_SQUARE,
+          paymentDate,
+          reservation.reservationId
+        ]]
+      });
+    }
+  );
+
+  await batchUpdateRows(
+    googleToken,
+    updates
+  );
+
+  return {
+    success: true,
+
+    orderId:
+      orderId,
+
+    squares:
+      reservation.squares,
+
+    amount:
+      reservation.total
+  };
+}
 async function confirmPayPalPayment(googleToken, paymentData) {
   const orderId = String(paymentData?.orderId || "").trim();
   const email = String(paymentData?.email || "")
@@ -1020,6 +1519,36 @@ export default {
             result
           );
         }
+ if (
+  body.action ===
+  "createPayPalOrder"
+) {
+  const result =
+    await createPayPalOrder(
+      token,
+      body.data
+    );
+
+  return Response.json(
+    result
+  );
+}
+
+
+if (
+  body.action ===
+  "capturePayPalOrder"
+) {
+  const result =
+    await capturePayPalOrder(
+      token,
+      body.data
+    );
+
+  return Response.json(
+    result
+  );
+}       
 if (
   body.action ===
   "confirmPayPalPayment"
