@@ -1594,18 +1594,38 @@ function renderPayPalButton() {
       },
 
 
-    onError:
-      function(error) {
+  onError:
+  function(error) {
 
-        console.error(
-          error
+    console.error(
+      "PayPal SDK error:",
+      error
+    );
+
+    const paymentStatus =
+      document.getElementById(
+        "paymentStatus"
+      );
+
+    /*
+      Do not overwrite the detailed error
+      already returned by our server.
+    */
+    if (
+      !paymentStatus.textContent ||
+      !paymentStatus.textContent.startsWith(
+        "PayPal error:"
+      )
+    ) {
+      paymentStatus.textContent =
+        "PayPal error: " +
+        (
+          error?.message ||
+          String(error) ||
+          "PayPal checkout failed."
         );
-
-        document.getElementById(
-          "paymentStatus"
-        ).textContent =
-          "PayPal could not complete the payment. Please try again.";
-      }
+    }
+  }
 
   }).render(
     "#paypal-button-container"
