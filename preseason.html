@@ -1413,71 +1413,86 @@ function renderPayPalButton() {
     */
 
     createOrder:
-      async function() {
+  async function() {
 
-        const paymentStatus =
-          document.getElementById(
-            "paymentStatus"
-          );
+    const paymentStatus =
+      document.getElementById(
+        "paymentStatus"
+      );
 
+    paymentStatus.textContent =
+      "Starting PayPal checkout...";
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/preseason",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body:
+              JSON.stringify({
+                action:
+                  "createPayPalOrder",
+
+                data: {
+                  squares:
+                    currentReservation.squares,
+
+                  email:
+                    currentReservation.email,
+
+                  reservationId:
+                    currentReservation.reservationId
+                }
+              })
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !result.success ||
+        !result.orderId
+      ) {
         paymentStatus.textContent =
-          "Starting PayPal checkout...";
-
-        const response =
-          await fetch(
-            "/api/preseason",
-            {
-              method:
-                "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json"
-              },
-
-              body:
-                JSON.stringify({
-
-                  action:
-                    "createPayPalOrder",
-
-                  data: {
-
-                    squares:
-                      currentReservation.squares,
-
-                    email:
-                      currentReservation.email,
-
-                    reservationId:
-                      currentReservation.reservationId
-                  }
-                })
-            }
-          );
-
-        const result =
-          await response.json();
-
-        if (
-          !response.ok ||
-          !result.success ||
-          !result.orderId
-        ) {
-
-          throw new Error(
+          "PayPal error: " +
+          (
             result.message ||
-            "PayPal checkout could not be started."
+            "Checkout could not be started."
           );
-        }
 
-        paymentStatus.textContent =
-          "";
+        throw new Error(
+          result.message ||
+          "PayPal checkout could not be started."
+        );
+      }
 
-        return result.orderId;
-      },
+      paymentStatus.textContent =
+        "";
 
+      return result.orderId;
 
+    } catch (error) {
+
+      paymentStatus.textContent =
+        "PayPal error: " +
+        (
+          error.message ||
+          String(error)
+        );
+
+      throw error;
+    }
+  },
     /*
     =====================================================
     SERVER CAPTURES PAYMENT AFTER APPROVAL
