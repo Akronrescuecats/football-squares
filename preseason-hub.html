@@ -8,7 +8,9 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>Akron Rescue Cats Preseason Football Squares</title>
+  <title>
+    Akron Rescue Cats Preseason Football Squares
+  </title>
 
   <style>
     * {
@@ -86,6 +88,12 @@
       text-align: center;
       font-weight: bold;
     }
+
+    .sold-out {
+      background: #9ca3af;
+      pointer-events: none;
+      cursor: default;
+    }
   </style>
 </head>
 
@@ -121,10 +129,11 @@
       </div>
 
       <a
+        id="game1Button"
         class="board-button"
         href="/preseason.html"
       >
-        View Game 1 Board
+        View Board
       </a>
     </div>
 
@@ -138,10 +147,11 @@
       </div>
 
       <a
+        id="game2Button"
         class="board-button"
         href="/preseason-2.html"
       >
-        View Game 2 Board
+        View Board
       </a>
     </div>
 
@@ -155,14 +165,99 @@
       </div>
 
       <a
+        id="game3Button"
         class="board-button"
         href="/preseason-3.html"
       >
-        View Game 3 Board
+        View Board
       </a>
     </div>
 
   </div>
+
+  <script>
+    const boards = [
+      {
+        api: "/api/preseason",
+        buttonId: "game1Button"
+      },
+      {
+        api: "/api/preseason-2",
+        buttonId: "game2Button"
+      },
+      {
+        api: "/api/preseason-3",
+        buttonId: "game3Button"
+      }
+    ];
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      checkSoldOutBoards
+    );
+
+    async function checkSoldOutBoards() {
+      boards.forEach(checkBoard);
+    }
+
+    async function checkBoard(board) {
+      try {
+        const response =
+          await fetch(
+            board.api,
+            {
+              method: "GET",
+              cache: "no-store"
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !data.success ||
+          !Array.isArray(data.squares)
+        ) {
+          return;
+        }
+
+        const soldCount =
+          data.squares.filter(
+            function(square) {
+              return (
+                String(
+                  square.status || ""
+                ).toLowerCase()
+                === "sold"
+              );
+            }
+          ).length;
+
+        if (soldCount >= 100) {
+          const button =
+            document.getElementById(
+              board.buttonId
+            );
+
+          button.textContent =
+            "SOLD OUT";
+
+          button.classList.add(
+            "sold-out"
+          );
+
+          button.removeAttribute(
+            "href"
+          );
+        }
+
+      } catch (error) {
+        // Leave the normal View Board button
+        // if status checking fails.
+      }
+    }
+  </script>
 
 </body>
 </html>
