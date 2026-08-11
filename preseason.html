@@ -1253,7 +1253,6 @@ function renderPayPalButton() {
   container.innerHTML = "";
 
   if (!currentReservation) {
-
     document.getElementById(
       "paymentStatus"
     ).textContent =
@@ -1261,6 +1260,203 @@ function renderPayPalButton() {
 
     return;
   }
+
+  if (typeof paypal === "undefined") {
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "PayPal could not load. Please refresh and try again.";
+
+    return;
+  }
+
+  paypal.Buttons({
+
+    style: {
+      layout: "vertical",
+      shape: "rect",
+      label: "paypal",
+      height: 45
+    },
+
+
+    /*
+    =====================================================
+    CREATE ORDER ON OUR SERVER
+    =====================================================
+    */
+
+    createOrder:
+      async function() {
+
+        const paymentStatus =
+          document.getElementById(
+            "paymentStatus"
+          );
+
+        paymentStatus.textContent =
+          "Starting PayPal checkout...";
+
+        const response =
+          await fetch(
+            "/api/preseason",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify({
+                  action:
+                    "createPayPalOrder",
+
+                  data: {
+                    squares:
+                      currentReservation.squares,
+
+                    email:
+                      currentReservation.email,
+
+                    reservationId:
+                      currentReservation.reservationId
+                  }
+                })
+            }
+          );
+
+        const result =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !result.success ||
+          !result.orderId
+        ) {
+          throw new Error(
+            result.message ||
+            "PayPal checkout could not be started."
+          );
+        }
+
+        paymentStatus.textContent = "";
+
+        return result.orderId;
+      },
+
+
+    /*
+    =====================================================
+    BUYER APPROVES -> OUR SERVER CAPTURES ONCE
+    =====================================================
+    */
+
+    onApprove:
+      async function(data) {
+
+        const paymentStatus =
+          document.getElementById(
+            "paymentStatus"
+          );
+
+        paymentStatus.textContent =
+          "Completing your PayPal payment...";
+
+        try {
+
+          const response =
+            await fetch(
+              "/api/preseason",
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+
+                body:
+                  JSON.stringify({
+                    action:
+                      "capturePayPalOrder",
+
+                    data: {
+                      orderId:
+                        data.orderID,
+
+                      squares:
+                        currentReservation.squares,
+
+                      email:
+                        currentReservation.email,
+
+                      reservationId:
+                        currentReservation.reservationId
+                    }
+                  })
+              }
+            );
+
+          const result =
+            await response.json();
+
+          if (
+            !response.ok ||
+            !result.success
+          ) {
+            throw new Error(
+              result.message ||
+              "The PayPal payment could not be confirmed."
+            );
+          }
+
+          paymentStatus.textContent =
+            "Payment completed! Your squares are now sold.";
+
+          currentReservation = null;
+          selectedSquares.clear();
+
+          await loadBoard();
+
+        } catch (error) {
+
+          paymentStatus.textContent =
+            "The payment could not be completed: " +
+            (
+              error.message ||
+              String(error)
+            );
+        }
+      },
+
+
+    onCancel:
+      function() {
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent =
+          "The PayPal payment was canceled. Your squares remain pending.";
+      },
+
+
+    onError:
+      function(error) {
+
+        console.error(error);
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent =
+          "PayPal could not complete the payment. Please try again.";
+      }
+
+  }).render(
+    "#paypal-button-container"
+  );
+}
 
   if (
     typeof paypal ===
