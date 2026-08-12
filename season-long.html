@@ -577,7 +577,6 @@
 
 <script src="https://www.paypal.com/sdk/js?client-id=AQ1WSxSGp7DG_e5Hvf8yvECA1ScYDu4rrKHrV3xxIYqaXl3V54Z-2N-W65IJimxAWcjd4Sn-NxPt5RZa&currency=USD&intent=capture"></script>
 
-
 <script>
 
 const PRICE_PER_SQUARE = 100;
@@ -585,13 +584,6 @@ const PRICE_PER_SQUARE = 100;
 let currentSquares = [];
 let selectedSquares = new Set();
 let currentReservation = null;
-
-
-/*
-=====================================================
-START
-=====================================================
-*/
 
 document.addEventListener(
   "DOMContentLoaded",
@@ -608,26 +600,16 @@ LOAD BOARD
 async function loadBoard() {
 
   const loading =
-    document.getElementById(
-      "loading"
-    );
+    document.getElementById("loading");
 
   const errorBox =
-    document.getElementById(
-      "error"
-    );
+    document.getElementById("error");
 
-  loading.style.display =
-    "block";
+  loading.style.display = "block";
+  loading.textContent = "Loading board...";
 
-  loading.textContent =
-    "Loading board...";
-
-  errorBox.style.display =
-    "none";
-
-  errorBox.textContent =
-    "";
+  errorBox.style.display = "none";
+  errorBox.textContent = "";
 
   try {
 
@@ -654,25 +636,20 @@ async function loadBoard() {
     }
 
     currentSquares =
-      Array.isArray(
-        data.squares
-      )
+      Array.isArray(data.squares)
         ? data.squares
         : [];
 
     cleanSelections();
     displayBoard();
 
-    loading.style.display =
-      "none";
+    loading.style.display = "none";
 
   } catch (error) {
 
-    loading.style.display =
-      "none";
+    loading.style.display = "none";
 
-    errorBox.style.display =
-      "block";
+    errorBox.style.display = "block";
 
     errorBox.textContent =
       "The board could not load: " +
@@ -695,149 +672,98 @@ function cleanSelections() {
   const available =
     new Set(
       currentSquares
-        .filter(
-          function(item) {
-
-            return (
-              String(
-                item.status ||
-                "Available"
-              )
-                .toLowerCase()
-              === "available"
-            );
-          }
-        )
-        .map(
-          function(item) {
-
-            return Number(
-              item.square
-            );
-          }
-        )
+        .filter(function(item) {
+          return (
+            String(
+              item.status ||
+              "Available"
+            ).toLowerCase()
+            === "available"
+          );
+        })
+        .map(function(item) {
+          return Number(item.square);
+        })
     );
 
   Array
-    .from(
-      selectedSquares
-    )
-    .forEach(
-      function(number) {
+    .from(selectedSquares)
+    .forEach(function(number) {
 
-        if (
-          !available.has(
-            number
-          )
-        ) {
-          selectedSquares.delete(
-            number
-          );
-        }
+      if (!available.has(number)) {
+        selectedSquares.delete(number);
       }
-    );
+
+    });
 }
 
 
 function displayBoard() {
 
   const board =
-    document.getElementById(
-      "board"
-    );
+    document.getElementById("board");
 
-  board.innerHTML =
-    "";
+  board.innerHTML = "";
 
   currentSquares
     .slice()
-    .sort(
-      function(a, b) {
+    .sort(function(a, b) {
+      return (
+        Number(a.square) -
+        Number(b.square)
+      );
+    })
+    .forEach(function(item) {
 
-        return (
-          Number(a.square) -
-          Number(b.square)
-        );
+      const number =
+        Number(item.square);
+
+      const status =
+        String(
+          item.status ||
+          "Available"
+        ).toLowerCase();
+
+      const button =
+        document.createElement("button");
+
+      button.type = "button";
+
+      button.classList.add("square");
+
+      if (
+        status === "available" &&
+        selectedSquares.has(number)
+      ) {
+        button.classList.add("selected");
+
+      } else {
+        button.classList.add(status);
       }
-    )
-    .forEach(
-      function(item) {
 
-        const number =
-          Number(
-            item.square
-          );
+      button.textContent = number;
 
-        const status =
-          String(
-            item.status ||
-            "Available"
-          ).toLowerCase();
+      button.title =
+        "Square " +
+        number +
+        ": " +
+        item.status;
 
-        const button =
-          document.createElement(
-            "button"
-          );
+      if (status === "available") {
 
-        button.type =
-          "button";
+        button.onclick =
+          function() {
+            toggleSquare(number);
+          };
 
-        button.classList.add(
-          "square"
-        );
+      } else {
 
-        if (
-          status ===
-            "available" &&
-          selectedSquares.has(
-            number
-          )
-        ) {
-
-          button.classList.add(
-            "selected"
-          );
-
-        } else {
-
-          button.classList.add(
-            status
-          );
-        }
-
-        button.textContent =
-          number;
-
-        button.title =
-          "Square " +
-          number +
-          ": " +
-          item.status;
-
-        if (
-          status ===
-          "available"
-        ) {
-
-          button.onclick =
-            function() {
-
-              toggleSquare(
-                number
-              );
-            };
-
-        } else {
-
-          button.disabled =
-            true;
-        }
-
-        board.appendChild(
-          button
-        );
+        button.disabled = true;
       }
-    );
+
+      board.appendChild(button);
+
+    });
 
   updateSelectionSummary();
 }
@@ -845,21 +771,10 @@ function displayBoard() {
 
 function toggleSquare(number) {
 
-  if (
-    selectedSquares.has(
-      number
-    )
-  ) {
-
-    selectedSquares.delete(
-      number
-    );
-
+  if (selectedSquares.has(number)) {
+    selectedSquares.delete(number);
   } else {
-
-    selectedSquares.add(
-      number
-    );
+    selectedSquares.add(number);
   }
 
   displayBoard();
@@ -867,9 +782,7 @@ function toggleSquare(number) {
 
 
 function clearSelections() {
-
   selectedSquares.clear();
-
   displayBoard();
 }
 
@@ -877,15 +790,10 @@ function clearSelections() {
 function getSelectedSquares() {
 
   return Array
-    .from(
-      selectedSquares
-    )
-    .sort(
-      function(a, b) {
-
-        return a - b;
-      }
-    );
+    .from(selectedSquares)
+    .sort(function(a, b) {
+      return a - b;
+    });
 }
 
 
@@ -909,15 +817,12 @@ function updateSelectionSummary() {
       "clearButton"
     );
 
-  if (
-    selected.length === 0
-  ) {
+  if (selected.length === 0) {
 
     summary.textContent =
       "No squares selected";
 
-    button.disabled =
-      true;
+    button.disabled = true;
 
     button.textContent =
       "Select Squares";
@@ -942,8 +847,7 @@ function updateSelectionSummary() {
     " selected — Total: $" +
     total;
 
-  button.disabled =
-    false;
+  button.disabled = false;
 
   button.textContent =
     "Reserve " +
@@ -973,9 +877,7 @@ function openReservationModal() {
   const squares =
     getSelectedSquares();
 
-  if (
-    !squares.length
-  ) {
+  if (!squares.length) {
     return;
   }
 
@@ -993,8 +895,7 @@ function openReservationModal() {
 
   document.getElementById(
     "reservationMessage"
-  ).textContent =
-    "";
+  ).textContent = "";
 
   document.getElementById(
     "reservationModal"
@@ -1027,8 +928,7 @@ function closePaymentModal() {
 
   document.getElementById(
     "paymentStatus"
-  ).textContent =
-    "";
+  ).textContent = "";
 
   loadBoard();
 }
@@ -1046,7 +946,6 @@ document
   )
   .addEventListener(
     "submit",
-
     async function(event) {
 
       event.preventDefault();
@@ -1064,9 +963,7 @@ document
       const squares =
         getSelectedSquares();
 
-      if (
-        !squares.length
-      ) {
+      if (!squares.length) {
 
         message.textContent =
           "Please select at least one square.";
@@ -1074,14 +971,12 @@ document
         return;
       }
 
-      button.disabled =
-        true;
+      button.disabled = true;
 
       button.textContent =
         "Reserving...";
 
-      message.textContent =
-        "";
+      message.textContent = "";
 
       try {
 
@@ -1089,8 +984,7 @@ document
           await fetch(
             "/api/season-long",
             {
-              method:
-                "POST",
+              method: "POST",
 
               headers: {
                 "Content-Type":
@@ -1099,12 +993,10 @@ document
 
               body:
                 JSON.stringify({
-
                   action:
                     "reserveSquares",
 
                   data: {
-
                     squares:
                       squares,
 
@@ -1143,7 +1035,6 @@ document
           !response.ok ||
           !result.success
         ) {
-
           throw new Error(
             result.message ||
             "The reservation could not be completed."
@@ -1179,8 +1070,7 @@ document
 
         document.getElementById(
           "paymentStatus"
-        ).textContent =
-          "";
+        ).textContent = "";
 
         document.getElementById(
           "paymentModal"
@@ -1201,12 +1091,12 @@ document
 
       } finally {
 
-        button.disabled =
-          false;
+        button.disabled = false;
 
         button.textContent =
           "Continue to Payment";
       }
+
     }
   );
 
@@ -1217,13 +1107,9 @@ ZEFFY / VENMO
 =====================================================
 */
 
-async function choosePaymentMethod(
-  method
-) {
+async function choosePaymentMethod(method) {
 
-  if (
-    !currentReservation
-  ) {
+  if (!currentReservation) {
 
     document.getElementById(
       "paymentStatus"
@@ -1240,24 +1126,18 @@ async function choosePaymentMethod(
 
     venmo:
       "https://account.venmo.com/u/akronrescuecats"
+
   };
 
   const paymentUrl =
-    paymentLinks[
-      method
-    ];
+    paymentLinks[method];
 
-  if (
-    !paymentUrl
-  ) {
+  if (!paymentUrl) {
     return;
   }
 
   const paymentWindow =
-    window.open(
-      "",
-      "_blank"
-    );
+    window.open("", "_blank");
 
   const paymentStatus =
     document.getElementById(
@@ -1273,8 +1153,7 @@ async function choosePaymentMethod(
       await fetch(
         "/api/season-long",
         {
-          method:
-            "POST",
+          method: "POST",
 
           headers: {
             "Content-Type":
@@ -1283,12 +1162,10 @@ async function choosePaymentMethod(
 
           body:
             JSON.stringify({
-
               action:
                 "savePaymentMethod",
 
               data: {
-
                 squares:
                   currentReservation.squares,
 
@@ -1309,7 +1186,6 @@ async function choosePaymentMethod(
       !response.ok ||
       !result.success
     ) {
-
       throw new Error(
         result.message ||
         "The payment method could not be saved."
@@ -1319,9 +1195,7 @@ async function choosePaymentMethod(
     paymentStatus.textContent =
       "Opening payment page...";
 
-    if (
-      paymentWindow
-    ) {
+    if (paymentWindow) {
 
       paymentWindow.location.href =
         paymentUrl;
@@ -1334,9 +1208,7 @@ async function choosePaymentMethod(
 
   } catch (error) {
 
-    if (
-      paymentWindow
-    ) {
+    if (paymentWindow) {
       paymentWindow.close();
     }
 
@@ -1360,12 +1232,9 @@ function renderPayPalButton() {
       "paypal-button-container"
     );
 
-  container.innerHTML =
-    "";
+  container.innerHTML = "";
 
-  if (
-    !currentReservation
-  ) {
+  if (!currentReservation) {
 
     document.getElementById(
       "paymentStatus"
@@ -1391,17 +1260,10 @@ function renderPayPalButton() {
   paypal.Buttons({
 
     style: {
-      layout:
-        "vertical",
-
-      shape:
-        "rect",
-
-      label:
-        "paypal",
-
-      height:
-        45
+      layout: "vertical",
+      shape: "rect",
+      label: "paypal",
+      height: 45
     },
 
 
@@ -1428,8 +1290,7 @@ function renderPayPalButton() {
             await fetch(
               "/api/season-long",
               {
-                method:
-                  "POST",
+                method: "POST",
 
                 headers: {
                   "Content-Type":
@@ -1438,12 +1299,10 @@ function renderPayPalButton() {
 
                 body:
                   JSON.stringify({
-
                     action:
                       "createPayPalOrder",
 
                     data: {
-
                       squares:
                         currentReservation.squares,
 
@@ -1479,8 +1338,7 @@ function renderPayPalButton() {
             );
           }
 
-          paymentStatus.textContent =
-            "";
+          paymentStatus.textContent = "";
 
           return result.orderId;
 
@@ -1521,8 +1379,7 @@ function renderPayPalButton() {
             await fetch(
               "/api/season-long",
               {
-                method:
-                  "POST",
+                method: "POST",
 
                 headers: {
                   "Content-Type":
@@ -1531,12 +1388,10 @@ function renderPayPalButton() {
 
                 body:
                   JSON.stringify({
-
                     action:
                       "capturePayPalOrder",
 
                     data: {
-
                       orderId:
                         data.orderID,
 
@@ -1637,13 +1492,12 @@ function renderPayPalButton() {
 
 /*
 =====================================================
-CLICK OUTSIDE MODALS
+CLOSE MODALS BY CLICKING BACKGROUND
 =====================================================
 */
 
 window.addEventListener(
   "click",
-
   function(event) {
 
     const reservationModal =
@@ -1660,7 +1514,6 @@ window.addEventListener(
       event.target ===
       reservationModal
     ) {
-
       closeReservationModal();
     }
 
@@ -1668,9 +1521,9 @@ window.addEventListener(
       event.target ===
       paymentModal
     ) {
-
       closePaymentModal();
     }
+
   }
 );
 
