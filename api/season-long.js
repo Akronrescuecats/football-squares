@@ -1,514 +1,1036 @@
-import crypto from "crypto";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
 
-const HOLD_MINUTES = 15;
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Akron Rescue Cats Season-Long Football Squares</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f3f4f6;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      color: #111827;
+    }
+
+    .page {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 14px;
+      color: #00338d;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    h1 {
+      margin: 0 0 5px;
+      color: #00338d;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #c60c30;
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .price-line {
+      margin: 10px 0;
+      color: #00338d;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .instructions {
+      max-width: 650px;
+      margin: 12px auto;
+      color: #374151;
+      line-height: 1.5;
+    }
+
+    .legend {
+      margin: 18px 0;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .selection-bar {
+      position: sticky;
+      top: 5px;
+      z-index: 20;
+      max-width: 650px;
+      margin: 0 auto 16px;
+      padding: 12px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    }
+
+    .selection-summary {
+      margin-bottom: 10px;
+      color: #00338d;
+      font-weight: bold;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .reserve-button,
+    .clear-button,
+    .refresh-button {
+      padding: 11px 16px;
+      border: none;
+      border-radius: 7px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .reserve-button {
+      background: #c60c30;
+      color: white;
+    }
+
+    .reserve-button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .clear-button {
+      margin-left: 6px;
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .refresh-button {
+      margin-top: 12px;
+      background: #00338d;
+      color: white;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(42px, 65px));
+      gap: 5px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+
+    .square {
+      aspect-ratio: 1;
+      min-height: 50px;
+      padding: 3px;
+      border: 2px solid transparent;
+      border-radius: 7px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .available {
+      background: #d1fae5;
+      color: #065f46;
+      cursor: pointer;
+    }
+
+    .available:hover {
+      background: #a7f3d0;
+    }
+
+    .selected {
+      background: #2563eb;
+      color: white;
+      border-color: #00338d;
+      cursor: pointer;
+    }
+
+    .pending {
+      background: #fef3c7;
+      color: #92400e;
+      cursor: not-allowed;
+    }
+
+    .sold {
+      background: #fecaca;
+      color: #991b1b;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      margin: 35px 0;
+      font-weight: bold;
+      color: #00338d;
+    }
+
+    .error {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 15px;
+      background: #fee2e2;
+      border-radius: 8px;
+      color: #991b1b;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      padding: 15px;
+      background: rgba(0,0,0,.65);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 430px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+      color: #00338d;
+    }
+
+    .selected-list {
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 7px;
+      background: #eff6ff;
+      color: #00338d;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    label {
+      display: block;
+      margin-top: 13px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      margin-top: 5px;
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .button-row button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .submit-button {
+      background: #00338d;
+      color: white;
+    }
+
+    .submit-button:disabled {
+      background: #9ca3af;
+      cursor: wait;
+    }
+
+    .cancel-button {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .message {
+      margin-top: 14px;
+      color: #c60c30;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    .payment-note {
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 8px;
+      background: #fff7ed;
+      color: #9a3412;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .payment-title {
+      margin: 18px 0 10px;
+      color: #00338d;
+      font-weight: bold;
+    }
+
+    .payment-button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 14px;
+      border: none;
+      border-radius: 7px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .zeffy {
+      background: #00338d;
+    }
+
+    .venmo {
+      background: #2563eb;
+    }
+
+    #paypal-button-container {
+      min-height: 45px;
+      margin: 12px 0;
+    }
+
+    @media (max-width: 650px) {
+      body {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+
+      .subtitle {
+        font-size: 19px;
+      }
+
+      .board {
+        grid-template-columns: repeat(5, minmax(48px, 65px));
+      }
+
+      .square {
+        min-height: 55px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="page">
+
+  <a class="back-link" href="/">
+    ← All Football Boards
+  </a>
+
+  <h1>Akron Rescue Cats</h1>
+
+  <p class="subtitle">
+    Season-Long Football Squares
+  </p>
+
+  <div class="price-line">
+    $100 per square
+  </div>
+
+  <p class="instructions">
+    Tap every green square you would like.
+    Selected squares turn blue.
+    Your squares will be held for 15 minutes after reservation.
+  </p>
+
+  <div class="legend">
+    🟩 Available &nbsp;&nbsp;
+    🟦 Selected &nbsp;&nbsp;
+    🟨 Pending &nbsp;&nbsp;
+    🟥 Sold
+  </div>
+
+  <div class="selection-bar">
+
+    <div
+      id="selectionSummary"
+      class="selection-summary"
+    >
+      No squares selected
+    </div>
+
+    <button
+      id="reserveButton"
+      class="reserve-button"
+      type="button"
+      disabled
+      onclick="openReservationModal()"
+    >
+      Select Squares
+    </button>
+
+    <button
+      id="clearButton"
+      class="clear-button"
+      type="button"
+      style="display:none;"
+      onclick="clearSelections()"
+    >
+      Clear
+    </button>
+
+  </div>
+
+  <div id="loading" class="loading">
+    Loading board...
+  </div>
+
+  <div
+    id="error"
+    class="error"
+    style="display:none;"
+  ></div>
+
+  <div id="board" class="board"></div>
+
+  <button
+    type="button"
+    class="refresh-button"
+    onclick="loadBoard()"
+  >
+    Refresh Board
+  </button>
+
+</div>
+
+
+<!-- RESERVATION MODAL -->
+
+<div id="reservationModal" class="modal">
+
+  <div class="modal-content">
+
+    <h2>Reserve Selected Squares</h2>
+
+    <div
+      id="selectedList"
+      class="selected-list"
+    ></div>
+
+    <form id="reservationForm">
+
+      <label for="buyerName">
+        Name
+      </label>
+
+      <input
+        id="buyerName"
+        type="text"
+        required
+      >
+
+      <label for="buyerEmail">
+        Email
+      </label>
+
+      <input
+        id="buyerEmail"
+        type="email"
+        required
+      >
+
+      <label for="buyerPhone">
+        Phone
+      </label>
+
+      <input
+        id="buyerPhone"
+        type="tel"
+        required
+      >
+
+      <div
+        id="reservationMessage"
+        class="message"
+      ></div>
+
+      <div class="button-row">
+
+        <button
+          type="button"
+          class="cancel-button"
+          onclick="closeReservationModal()"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="submitReservationButton"
+          type="submit"
+          class="submit-button"
+        >
+          Continue to Payment
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- PAYMENT MODAL -->
+
+<div id="paymentModal" class="modal">
+
+  <div class="modal-content">
+
+    <h2>Squares Reserved!</h2>
+
+    <div
+      id="paymentSummary"
+      class="selected-list"
+    ></div>
+
+    <div class="payment-note">
+      Your squares are being held for
+      <strong>15 minutes</strong>.
+      Please complete payment before the hold expires.
+    </div>
+
+    <div class="payment-title">
+      Pay automatically with PayPal
+    </div>
+
+    <div id="paypal-button-container"></div>
+
+    <div class="payment-title">
+      Other Payment Options
+    </div>
+
+    <button
+      type="button"
+      class="payment-button zeffy"
+      onclick="choosePaymentMethod('zeffy')"
+    >
+      Pay with Zeffy — Preferred
+    </button>
+
+    <button
+      type="button"
+      class="payment-button venmo"
+      onclick="choosePaymentMethod('venmo')"
+    >
+      Pay with Venmo
+    </button>
+
+    <div
+      id="paymentStatus"
+      class="message"
+    ></div>
+
+    <div class="button-row">
+
+      <button
+        type="button"
+        class="cancel-button"
+        onclick="closePaymentModal()"
+      >
+        Close
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- PAYPAL SDK -->
+
+<script src="https://www.paypal.com/sdk/js?client-id=AQ1WSxSGp7DG_e5Hvf8yvECA1ScYDu4rrKHrV3xxIYqaXl3V54Z-2N-W65IJimxAWcjd4Sn-NxPt5RZa&currency=USD&intent=capture"></script>
+
+
+<script>
+
 const PRICE_PER_SQUARE = 100;
-const SHEET_NAME = "Squares";
-const CURRENCY_CODE = "USD";
+
+let currentSquares = [];
+let selectedSquares = new Set();
+let currentReservation = null;
+
 
 /*
 =====================================================
-GOOGLE AUTH
+START
 =====================================================
 */
 
-function base64Url(input) {
-  return Buffer
-    .from(input)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-}
+document.addEventListener(
+  "DOMContentLoaded",
+  loadBoard
+);
 
 
-function getGoogleCredentials() {
-  const raw =
-    process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+/*
+=====================================================
+LOAD BOARD
+=====================================================
+*/
 
-  if (!raw) {
-    throw new Error(
-      "GOOGLE_SERVICE_ACCOUNT_JSON is missing."
+async function loadBoard() {
+
+  const loading =
+    document.getElementById(
+      "loading"
     );
-  }
 
-  let credentials;
+  const errorBox =
+    document.getElementById(
+      "error"
+    );
+
+  loading.style.display =
+    "block";
+
+  loading.textContent =
+    "Loading board...";
+
+  errorBox.style.display =
+    "none";
+
+  errorBox.textContent =
+    "";
 
   try {
-    credentials =
-      JSON.parse(raw);
+
+    const response =
+      await fetch(
+        "/api/season-long",
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok ||
+      !data.success
+    ) {
+      throw new Error(
+        data.message ||
+        "The board could not load."
+      );
+    }
+
+    currentSquares =
+      Array.isArray(
+        data.squares
+      )
+        ? data.squares
+        : [];
+
+    cleanSelections();
+    displayBoard();
+
+    loading.style.display =
+      "none";
+
   } catch (error) {
-    throw new Error(
-      "GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON."
-    );
+
+    loading.style.display =
+      "none";
+
+    errorBox.style.display =
+      "block";
+
+    errorBox.textContent =
+      "The board could not load: " +
+      (
+        error.message ||
+        String(error)
+      );
   }
-
-  if (
-    !credentials.client_email ||
-    !credentials.private_key
-  ) {
-    throw new Error(
-      "Google credentials are incomplete."
-    );
-  }
-
-  return credentials;
-}
-
-
-async function getAccessToken() {
-  const credentials =
-    getGoogleCredentials();
-
-  const now =
-    Math.floor(
-      Date.now() / 1000
-    );
-
-  const header = {
-    alg: "RS256",
-    typ: "JWT"
-  };
-
-  const claims = {
-    iss:
-      credentials.client_email,
-
-    scope:
-      "https://www.googleapis.com/auth/spreadsheets",
-
-    aud:
-      "https://oauth2.googleapis.com/token",
-
-    iat:
-      now,
-
-    exp:
-      now + 3600
-  };
-
-  const unsignedToken =
-    base64Url(
-      JSON.stringify(header)
-    ) +
-    "." +
-    base64Url(
-      JSON.stringify(claims)
-    );
-
-  const privateKey =
-    crypto.createPrivateKey({
-      key:
-        credentials.private_key,
-
-      format:
-        "pem"
-    });
-
-  const signature =
-    crypto.sign(
-      "RSA-SHA256",
-      Buffer.from(
-        unsignedToken
-      ),
-      privateKey
-    );
-
-  const jwt =
-    unsignedToken +
-    "." +
-    base64Url(
-      signature
-    );
-
-  const response =
-    await fetch(
-      "https://oauth2.googleapis.com/token",
-      {
-        method:
-          "POST",
-
-        headers: {
-          "Content-Type":
-            "application/x-www-form-urlencoded"
-        },
-
-        body:
-          new URLSearchParams({
-            grant_type:
-              "urn:ietf:params:oauth:grant-type:jwt-bearer",
-
-            assertion:
-              jwt
-          })
-      }
-    );
-
-  const data =
-    await response.json();
-
-  if (
-    !response.ok ||
-    !data.access_token
-  ) {
-    throw new Error(
-      data.error_description ||
-      "Google authentication failed."
-    );
-  }
-
-  return data.access_token;
 }
 
 
 /*
 =====================================================
-SPREADSHEET
+BOARD
 =====================================================
 */
 
-function getSpreadsheetId() {
-  const id =
-    process.env
-      .SEASON_LONG_SPREADSHEET_ID;
+function cleanSelections() {
 
-  if (!id) {
-    throw new Error(
-      "SEASON_LONG_SPREADSHEET_ID is missing."
+  const available =
+    new Set(
+      currentSquares
+        .filter(
+          function(item) {
+
+            return (
+              String(
+                item.status ||
+                "Available"
+              )
+                .toLowerCase()
+              === "available"
+            );
+          }
+        )
+        .map(
+          function(item) {
+
+            return Number(
+              item.square
+            );
+          }
+        )
     );
-  }
 
-  return id;
+  Array
+    .from(
+      selectedSquares
+    )
+    .forEach(
+      function(number) {
+
+        if (
+          !available.has(
+            number
+          )
+        ) {
+          selectedSquares.delete(
+            number
+          );
+        }
+      }
+    );
 }
 
 
-async function getAllRows(
-  token
-) {
-  const spreadsheetId =
-    getSpreadsheetId();
+function displayBoard() {
 
-  const range =
-    encodeURIComponent(
-      `${SHEET_NAME}!A2:L101`
+  const board =
+    document.getElementById(
+      "board"
     );
 
-  const url =
-    "https://sheets.googleapis.com/v4/spreadsheets/" +
-    spreadsheetId +
-    "/values/" +
-    range;
+  board.innerHTML =
+    "";
 
-  const response =
-    await fetch(
-      url,
-      {
-        headers: {
-          Authorization:
-            "Bearer " +
-            token
-        },
+  currentSquares
+    .slice()
+    .sort(
+      function(a, b) {
 
-        cache:
-          "no-store"
+        return (
+          Number(a.square) -
+          Number(b.square)
+        );
+      }
+    )
+    .forEach(
+      function(item) {
+
+        const number =
+          Number(
+            item.square
+          );
+
+        const status =
+          String(
+            item.status ||
+            "Available"
+          ).toLowerCase();
+
+        const button =
+          document.createElement(
+            "button"
+          );
+
+        button.type =
+          "button";
+
+        button.classList.add(
+          "square"
+        );
+
+        if (
+          status ===
+            "available" &&
+          selectedSquares.has(
+            number
+          )
+        ) {
+
+          button.classList.add(
+            "selected"
+          );
+
+        } else {
+
+          button.classList.add(
+            status
+          );
+        }
+
+        button.textContent =
+          number;
+
+        button.title =
+          "Square " +
+          number +
+          ": " +
+          item.status;
+
+        if (
+          status ===
+          "available"
+        ) {
+
+          button.onclick =
+            function() {
+
+              toggleSquare(
+                number
+              );
+            };
+
+        } else {
+
+          button.disabled =
+            true;
+        }
+
+        board.appendChild(
+          button
+        );
       }
     );
 
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data?.error?.message ||
-      "Could not read the football squares sheet."
-    );
-  }
-
-  const sourceRows =
-    data.values || [];
-
-  const rows = [];
-
-  for (
-    let index = 0;
-    index < 100;
-    index++
-  ) {
-    const source =
-      sourceRows[index] || [];
-
-    rows.push([
-      source[0] ||
-        String(index + 1),
-
-      source[1] ||
-        "Available",
-
-      source[2] || "",
-      source[3] || "",
-      source[4] || "",
-      source[5] || "",
-      source[6] || "",
-      source[7] || "",
-      source[8] || "",
-      source[9] || "",
-      source[10] || "",
-      source[11] || ""
-    ]);
-  }
-
-  return rows;
+  updateSelectionSummary();
 }
 
 
-async function batchUpdateRows(
-  token,
-  updates
-) {
+function toggleSquare(number) {
+
   if (
-    !Array.isArray(updates) ||
-    updates.length === 0
+    selectedSquares.has(
+      number
+    )
+  ) {
+
+    selectedSquares.delete(
+      number
+    );
+
+  } else {
+
+    selectedSquares.add(
+      number
+    );
+  }
+
+  displayBoard();
+}
+
+
+function clearSelections() {
+
+  selectedSquares.clear();
+
+  displayBoard();
+}
+
+
+function getSelectedSquares() {
+
+  return Array
+    .from(
+      selectedSquares
+    )
+    .sort(
+      function(a, b) {
+
+        return a - b;
+      }
+    );
+}
+
+
+function updateSelectionSummary() {
+
+  const selected =
+    getSelectedSquares();
+
+  const summary =
+    document.getElementById(
+      "selectionSummary"
+    );
+
+  const button =
+    document.getElementById(
+      "reserveButton"
+    );
+
+  const clear =
+    document.getElementById(
+      "clearButton"
+    );
+
+  if (
+    selected.length === 0
+  ) {
+
+    summary.textContent =
+      "No squares selected";
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Select Squares";
+
+    clear.style.display =
+      "none";
+
+    return;
+  }
+
+  const total =
+    selected.length *
+    PRICE_PER_SQUARE;
+
+  summary.textContent =
+    selected.length +
+    (
+      selected.length === 1
+        ? " square"
+        : " squares"
+    ) +
+    " selected — Total: $" +
+    total;
+
+  button.disabled =
+    false;
+
+  button.textContent =
+    "Reserve " +
+    selected.length +
+    (
+      selected.length === 1
+        ? " Square"
+        : " Squares"
+    ) +
+    " ($" +
+    total +
+    ")";
+
+  clear.style.display =
+    "inline-block";
+}
+
+
+/*
+=====================================================
+RESERVATION MODAL
+=====================================================
+*/
+
+function openReservationModal() {
+
+  const squares =
+    getSelectedSquares();
+
+  if (
+    !squares.length
   ) {
     return;
   }
 
-  const spreadsheetId =
-    getSpreadsheetId();
+  const total =
+    squares.length *
+    PRICE_PER_SQUARE;
 
-  const url =
-    "https://sheets.googleapis.com/v4/spreadsheets/" +
-    spreadsheetId +
-    "/values:batchUpdate";
+  document.getElementById(
+    "selectedList"
+  ).textContent =
+    "Squares: " +
+    squares.join(", ") +
+    " — Total: $" +
+    total;
 
-  const response =
-    await fetch(
-      url,
-      {
-        method:
-          "POST",
+  document.getElementById(
+    "reservationMessage"
+  ).textContent =
+    "";
 
-        headers: {
-          Authorization:
-            "Bearer " +
-            token,
+  document.getElementById(
+    "reservationModal"
+  ).style.display =
+    "flex";
+}
 
-          "Content-Type":
-            "application/json"
-        },
 
-        body:
-          JSON.stringify({
-            valueInputOption:
-              "RAW",
+function closeReservationModal() {
 
-            data:
-              updates
-          })
-      }
-    );
-
-  const result =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      result?.error?.message ||
-      "Could not update the football squares sheet."
-    );
-  }
-
-  return result;
+  document.getElementById(
+    "reservationModal"
+  ).style.display =
+    "none";
 }
 
 
 /*
 =====================================================
-HELPERS
+PAYMENT MODAL
 =====================================================
 */
 
-function normalizeStatus(
-  value
-) {
-  const status =
-    String(
-      value || ""
-    )
-      .trim()
-      .toLowerCase();
+function closePaymentModal() {
 
-  if (
-    status === "sold"
-  ) {
-    return "Sold";
-  }
+  document.getElementById(
+    "paymentModal"
+  ).style.display =
+    "none";
 
-  if (
-    status === "pending"
-  ) {
-    return "Pending";
-  }
+  document.getElementById(
+    "paymentStatus"
+  ).textContent =
+    "";
 
-  return "Available";
-}
-
-
-function normalizeSquareList(
-  values
-) {
-  if (
-    !Array.isArray(values)
-  ) {
-    throw new Error(
-      "Please select at least one square."
-    );
-  }
-
-  const squares =
-    Array.from(
-      new Set(
-        values.map(
-          function(value) {
-            return Number(value);
-          }
-        )
-      )
-    )
-      .filter(
-        function(number) {
-          return (
-            Number.isInteger(number) &&
-            number >= 1 &&
-            number <= 100
-          );
-        }
-      )
-      .sort(
-        function(a, b) {
-          return a - b;
-        }
-      );
-
-  if (
-    squares.length === 0
-  ) {
-    throw new Error(
-      "Please select at least one square."
-    );
-  }
-
-  return squares;
-}
-
-
-function rowsToPublicSquares(
-  rows
-) {
-  return rows.map(
-    function(row, index) {
-      return {
-        square:
-          Number(
-            row[0] ||
-            index + 1
-          ),
-
-        status:
-          normalizeStatus(
-            row[1]
-          ),
-
-        name:
-          String(
-            row[2] || ""
-          )
-      };
-    }
-  );
-}
-
-
-/*
-=====================================================
-EXPIRED RESERVATIONS
-=====================================================
-*/
-
-async function releaseExpiredReservations(
-  token,
-  rows
-) {
-  const now =
-    Date.now();
-
-  const updates = [];
-
-  rows.forEach(
-    function(row, index) {
-
-      if (
-        normalizeStatus(
-          row[1]
-        ) !== "Pending"
-      ) {
-        return;
-      }
-
-      const reservedAt =
-        new Date(
-          row[5]
-        );
-
-      if (
-        Number.isNaN(
-          reservedAt.getTime()
-        )
-      ) {
-        return;
-      }
-
-      const minutesPassed =
-        (
-          now -
-          reservedAt.getTime()
-        ) / 60000;
-
-      if (
-        minutesPassed <
-        HOLD_MINUTES
-      ) {
-        return;
-      }
-
-      const sheetRow =
-        index + 2;
-
-      updates.push({
-        range:
-          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
-
-        values: [[
-          "Available",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          ""
-        ]]
-      });
-    }
-  );
-
-  await batchUpdateRows(
-    token,
-    updates
-  );
-
-  return updates.length;
+  loadBoard();
 }
 
 
@@ -518,891 +1040,175 @@ RESERVE SQUARES
 =====================================================
 */
 
-async function reserveSquares(
-  token,
-  formData
-) {
-  if (!formData) {
-    throw new Error(
-      "Reservation information is missing."
-    );
-  }
+document
+  .getElementById(
+    "reservationForm"
+  )
+  .addEventListener(
+    "submit",
 
-  const squares =
-    normalizeSquareList(
-      formData.squares
-    );
+    async function(event) {
 
-  const name =
-    String(
-      formData.name || ""
-    ).trim();
+      event.preventDefault();
 
-  const email =
-    String(
-      formData.email || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const phone =
-    String(
-      formData.phone || ""
-    ).trim();
-
-  if (
-    !name ||
-    !email ||
-    !phone
-  ) {
-    throw new Error(
-      "Please enter your name, email, and phone number."
-    );
-  }
-
-  if (
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      .test(email)
-  ) {
-    throw new Error(
-      "Please enter a valid email address."
-    );
-  }
-
-  let rows =
-    await getAllRows(
-      token
-    );
-
-  await releaseExpiredReservations(
-    token,
-    rows
-  );
-
-  rows =
-    await getAllRows(
-      token
-    );
-
-  const unavailable = [];
-
-  squares.forEach(
-    function(squareNumber) {
-
-      const row =
-        rows[
-          squareNumber - 1
-        ];
-
-      if (
-        normalizeStatus(
-          row[1]
-        ) !== "Available"
-      ) {
-        unavailable.push(
-          squareNumber
+      const button =
+        document.getElementById(
+          "submitReservationButton"
         );
-      }
-    }
-  );
 
-  if (
-    unavailable.length > 0
-  ) {
-    throw new Error(
-      "These squares are no longer available: " +
-      unavailable.join(", ") +
-      ". Please choose again."
-    );
-  }
-
-  const reservedAt =
-    new Date()
-      .toISOString();
-
-  const reservationId =
-    crypto.randomUUID();
-
-  const updates = [];
-
-  squares.forEach(
-    function(squareNumber) {
-
-      const sheetRow =
-        squareNumber + 1;
-
-      updates.push({
-        range:
-          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
-
-        values: [[
-          "Pending",
-          name,
-          email,
-          phone,
-          reservedAt,
-          "",
-          "Awaiting Payment",
-          "",
-          "",
-          "",
-          reservationId
-        ]]
-      });
-    }
-  );
-
-  await batchUpdateRows(
-    token,
-    updates
-  );
-
-  return {
-    success:
-      true,
-
-    squares:
-      squares,
-
-    name:
-      name,
-
-    email:
-      email,
-
-    phone:
-      phone,
-
-    quantity:
-      squares.length,
-
-    pricePerSquare:
-      PRICE_PER_SQUARE,
-
-    total:
-      squares.length *
-      PRICE_PER_SQUARE,
-
-    expiresInMinutes:
-      HOLD_MINUTES,
-
-    reservationId:
-      reservationId
-  };
-}
-
-
-/*
-=====================================================
-PAYPAL AUTH
-=====================================================
-*/
-
-async function getPayPalAccessToken() {
-  const clientId =
-    process.env
-      .PAYPAL_CLIENT_ID;
-
-  const clientSecret =
-    process.env
-      .PAYPAL_CLIENT_SECRET;
-
-  if (
-    !clientId ||
-    !clientSecret
-  ) {
-    throw new Error(
-      "PayPal credentials are missing."
-    );
-  }
-
-  const authorization =
-    Buffer
-      .from(
-        clientId +
-        ":" +
-        clientSecret
-      )
-      .toString(
-        "base64"
-      );
-
-  const response =
-    await fetch(
-      "https://api-m.paypal.com/v1/oauth2/token",
-      {
-        method:
-          "POST",
-
-        headers: {
-          Authorization:
-            "Basic " +
-            authorization,
-
-          "Content-Type":
-            "application/x-www-form-urlencoded"
-        },
-
-        body:
-          "grant_type=client_credentials"
-      }
-    );
-
-  const data =
-    await response.json();
-
-  if (
-    !response.ok ||
-    !data.access_token
-  ) {
-    throw new Error(
-      data?.error_description ||
-      "PayPal authentication failed."
-    );
-  }
-
-  return data.access_token;
-}
-
-
-async function getPayPalOrder(
-  orderId
-) {
-  const accessToken =
-    await getPayPalAccessToken();
-
-  const response =
-    await fetch(
-      "https://api-m.paypal.com/v2/checkout/orders/" +
-      encodeURIComponent(
-        orderId
-      ),
-      {
-        method:
-          "GET",
-
-        headers: {
-          Authorization:
-            "Bearer " +
-            accessToken,
-
-          Accept:
-            "application/json"
-        },
-
-        cache:
-          "no-store"
-      }
-    );
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data?.message ||
-      "PayPal could not verify this order."
-    );
-  }
-
-  return data;
-}
-
-
-/*
-=====================================================
-PAYPAL IDEMPOTENCY ID
-=====================================================
-
-Create and Capture need DIFFERENT stable IDs.
-
-Both remain below PayPal's request-ID length limit.
-=====================================================
-*/
-
-function makePayPalRequestId(
-  type,
-  reservationId
-) {
-  return crypto
-    .createHash(
-      "sha256"
-    )
-    .update(
-      type +
-      ":" +
-      reservationId
-    )
-    .digest(
-      "hex"
-    )
-    .slice(
-      0,
-      36
-    );
-}
-
-
-/*
-=====================================================
-VALIDATE PAYPAL RESERVATION
-=====================================================
-*/
-
-async function validatePayPalReservation(
-  googleToken,
-  paymentData
-) {
-  const email =
-    String(
-      paymentData?.email || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const reservationId =
-    String(
-      paymentData?.reservationId || ""
-    ).trim();
-
-  const squares =
-    normalizeSquareList(
-      paymentData?.squares
-    );
-
-  if (
-    !email ||
-    !reservationId
-  ) {
-    throw new Error(
-      "PayPal reservation information is incomplete."
-    );
-  }
-
-  let rows =
-    await getAllRows(
-      googleToken
-    );
-
-  await releaseExpiredReservations(
-    googleToken,
-    rows
-  );
-
-  rows =
-    await getAllRows(
-      googleToken
-    );
-
-  squares.forEach(
-    function(squareNumber) {
-
-      const row =
-        rows[
-          squareNumber - 1
-        ];
-
-      if (
-        normalizeStatus(
-          row[1]
-        ) !== "Pending"
-      ) {
-        throw new Error(
-          "Square " +
-          squareNumber +
-          " is no longer pending."
+      const message =
+        document.getElementById(
+          "reservationMessage"
         );
-      }
 
-      const reservedEmail =
-        String(
-          row[3] || ""
-        )
-          .trim()
-          .toLowerCase();
+      const squares =
+        getSelectedSquares();
 
       if (
-        reservedEmail !==
-        email
+        !squares.length
       ) {
-        throw new Error(
-          "The reservation email does not match."
-        );
-      }
 
-      const savedReservationId =
-        String(
-          row[11] || ""
-        ).trim();
+        message.textContent =
+          "Please select at least one square.";
 
-      if (
-        savedReservationId !==
-        reservationId
-      ) {
-        throw new Error(
-          "The reservation ID does not match."
-        );
-      }
-    }
-  );
-
-  return {
-    rows:
-      rows,
-
-    squares:
-      squares,
-
-    email:
-      email,
-
-    reservationId:
-      reservationId,
-
-    total:
-      squares.length *
-      PRICE_PER_SQUARE
-  };
-}
-
-
-/*
-=====================================================
-CREATE PAYPAL ORDER
-=====================================================
-*/
-
-async function createPayPalOrder(
-  googleToken,
-  paymentData
-) {
-  const reservation =
-    await validatePayPalReservation(
-      googleToken,
-      paymentData
-    );
-
-  const accessToken =
-    await getPayPalAccessToken();
-
-  const requestId =
-    makePayPalRequestId(
-      "create",
-      reservation.reservationId
-    );
-
-  const response =
-    await fetch(
-      "https://api-m.paypal.com/v2/checkout/orders",
-      {
-        method:
-          "POST",
-
-        headers: {
-          Authorization:
-            "Bearer " +
-            accessToken,
-
-          "Content-Type":
-            "application/json",
-
-          "PayPal-Request-Id":
-            requestId,
-
-          Prefer:
-            "return=representation"
-        },
-
-        body:
-          JSON.stringify({
-            intent:
-              "CAPTURE",
-
-            purchase_units: [
-              {
-                custom_id:
-                  reservation.reservationId,
-
-                description:
-                  "Akron Rescue Cats Season-Long Football Squares: " +
-                  reservation.squares.join(", "),
-
-                amount: {
-                  currency_code:
-                    CURRENCY_CODE,
-
-                  value:
-                    reservation.total
-                      .toFixed(2)
-                }
-              }
-            ]
-          })
-      }
-    );
-
-  const data =
-    await response.json();
-
-  if (
-    !response.ok ||
-    !data.id
-  ) {
-    throw new Error(
-      data?.message ||
-      data?.details?.[0]?.description ||
-      "PayPal could not create the order."
-    );
-  }
-
-  return {
-    success:
-      true,
-
-    orderId:
-      data.id
-  };
-}
-
-
-/*
-=====================================================
-VERIFY COMPLETED PAYPAL ORDER
-=====================================================
-*/
-
-function verifyCompletedPayPalOrder(
-  paypalOrder,
-  expectedTotal,
-  reservationId
-) {
-  if (
-    String(
-      paypalOrder?.status || ""
-    ).toUpperCase() !==
-    "COMPLETED"
-  ) {
-    throw new Error(
-      "The PayPal payment is not completed."
-    );
-  }
-
-  const purchaseUnits =
-    Array.isArray(
-      paypalOrder.purchase_units
-    )
-      ? paypalOrder.purchase_units
-      : [];
-
-  let paidTotal = 0;
-
-  let reservationMatches =
-    false;
-
-  purchaseUnits.forEach(
-    function(unit) {
-
-      if (
-        String(
-          unit.custom_id || ""
-        ) ===
-        reservationId
-      ) {
-        reservationMatches =
-          true;
-      }
-
-      const captures =
-        unit?.payments?.captures;
-
-      if (
-        !Array.isArray(
-          captures
-        )
-      ) {
         return;
       }
 
-      captures.forEach(
-        function(capture) {
+      button.disabled =
+        true;
 
-          if (
-            String(
-              capture.status || ""
-            ).toUpperCase() !==
-            "COMPLETED"
-          ) {
-            return;
-          }
+      button.textContent =
+        "Reserving...";
 
-          const currency =
-            String(
-              capture
-                ?.amount
-                ?.currency_code ||
-              ""
-            ).toUpperCase();
+      message.textContent =
+        "";
 
-          if (
-            currency !==
-            CURRENCY_CODE
-          ) {
-            throw new Error(
-              "The PayPal payment currency is incorrect."
-            );
-          }
+      try {
 
-          paidTotal +=
-            Number(
-              capture
-                ?.amount
-                ?.value ||
-              0
-            );
+        const response =
+          await fetch(
+            "/api/season-long",
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify({
+
+                  action:
+                    "reserveSquares",
+
+                  data: {
+
+                    squares:
+                      squares,
+
+                    name:
+                      document
+                        .getElementById(
+                          "buyerName"
+                        )
+                        .value
+                        .trim(),
+
+                    email:
+                      document
+                        .getElementById(
+                          "buyerEmail"
+                        )
+                        .value
+                        .trim(),
+
+                    phone:
+                      document
+                        .getElementById(
+                          "buyerPhone"
+                        )
+                        .value
+                        .trim()
+                  }
+                })
+            }
+          );
+
+        const result =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+
+          throw new Error(
+            result.message ||
+            "The reservation could not be completed."
+          );
         }
-      );
-    }
-  );
 
-  if (
-    !reservationMatches
-  ) {
-    throw new Error(
-      "The PayPal payment does not match this reservation."
-    );
-  }
+        currentReservation =
+          result;
 
-  if (
-    Math.round(
-      paidTotal * 100
-    ) !==
-    Math.round(
-      expectedTotal * 100
-    )
-  ) {
-    throw new Error(
-      "The PayPal payment amount does not match the reservation."
-    );
-  }
-}
+        closeReservationModal();
 
+        selectedSquares.clear();
 
-/*
-=====================================================
-CAPTURE PAYPAL ORDER
-=====================================================
-*/
-
-async function capturePayPalOrder(
-  googleToken,
-  paymentData
-) {
-  const orderId =
-    String(
-      paymentData?.orderId || ""
-    ).trim();
-
-  if (!orderId) {
-    throw new Error(
-      "The PayPal order ID is missing."
-    );
-  }
-
-  /*
-  First check whether this exact PayPal order
-  was already successfully recorded.
-  */
-
-  let currentRows =
-    await getAllRows(
-      googleToken
-    );
-
-  const alreadyPaid =
-    currentRows.some(
-      function(row) {
-
-        return (
-          String(
-            row[8] || ""
-          ) ===
-            orderId &&
-
-          String(
-            row[7] || ""
+        document
+          .getElementById(
+            "reservationForm"
           )
-            .trim()
-            .toLowerCase() ===
-            "paid"
-        );
+          .reset();
+
+        document.getElementById(
+          "paymentSummary"
+        ).innerHTML =
+          "<strong>Squares:</strong> " +
+          result.squares.join(", ") +
+
+          "<br><strong>Price per square:</strong> $" +
+          PRICE_PER_SQUARE +
+
+          "<br><strong>Total:</strong> $" +
+          Number(
+            result.total
+          ).toFixed(2);
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent =
+          "";
+
+        document.getElementById(
+          "paymentModal"
+        ).style.display =
+          "flex";
+
+        renderPayPalButton();
+
+        await loadBoard();
+
+      } catch (error) {
+
+        message.textContent =
+          error.message ||
+          String(error);
+
+        await loadBoard();
+
+      } finally {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "Continue to Payment";
       }
-    );
-
-  if (
-    alreadyPaid
-  ) {
-    return {
-      success:
-        true,
-
-      alreadyProcessed:
-        true,
-
-      orderId:
-        orderId
-    };
-  }
-
-  const reservation =
-    await validatePayPalReservation(
-      googleToken,
-      paymentData
-    );
-
-  const accessToken =
-    await getPayPalAccessToken();
-
-  const requestId =
-    makePayPalRequestId(
-      "capture",
-      reservation.reservationId
-    );
-
-  const response =
-    await fetch(
-      "https://api-m.paypal.com/v2/checkout/orders/" +
-      encodeURIComponent(
-        orderId
-      ) +
-      "/capture",
-      {
-        method:
-          "POST",
-
-        headers: {
-          Authorization:
-            "Bearer " +
-            accessToken,
-
-          "Content-Type":
-            "application/json",
-
-          "PayPal-Request-Id":
-            requestId,
-
-          Prefer:
-            "return=representation"
-        },
-
-        body:
-          "{}"
-      }
-    );
-
-  const captureResult =
-    await response.json();
-
-  /*
-  Whether this was the first request or a retry,
-  retrieve the final order from PayPal.
-  */
-
-  let paypalOrder;
-
-  try {
-    paypalOrder =
-      await getPayPalOrder(
-        orderId
-      );
-  } catch (error) {
-    paypalOrder =
-      captureResult;
-  }
-
-  if (
-    !response.ok &&
-    String(
-      paypalOrder?.status || ""
-    ).toUpperCase() !==
-      "COMPLETED"
-  ) {
-    throw new Error(
-      captureResult?.message ||
-      captureResult
-        ?.details?.[0]
-        ?.description ||
-      "PayPal could not capture the payment."
-    );
-  }
-
-  verifyCompletedPayPalOrder(
-    paypalOrder,
-    reservation.total,
-    reservation.reservationId
-  );
-
-  const paymentDate =
-    new Date()
-      .toISOString();
-
-  const updates = [];
-
-  reservation.squares.forEach(
-    function(squareNumber) {
-
-      const row =
-        reservation.rows[
-          squareNumber - 1
-        ];
-
-      const sheetRow =
-        squareNumber + 1;
-
-      updates.push({
-        range:
-          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
-
-        values: [[
-          "Sold",
-          row[2] || "",
-          row[3] || "",
-          row[4] || "",
-          row[5] || "",
-          "PayPal",
-          "Paid",
-          orderId,
-          PRICE_PER_SQUARE,
-          paymentDate,
-          reservation.reservationId
-        ]]
-      });
     }
   );
-
-  /*
-  Sold / PayPal / Paid / Order ID /
-  Amount / Payment Date are written together.
-  */
-
-  await batchUpdateRows(
-    googleToken,
-    updates
-  );
-
-  return {
-    success:
-      true,
-
-    orderId:
-      orderId,
-
-    squares:
-      reservation.squares,
-
-    amount:
-      reservation.total
-  };
-}
 
 
 /*
@@ -1411,311 +1217,464 @@ ZEFFY / VENMO
 =====================================================
 */
 
-async function savePaymentMethod(
-  googleToken,
-  paymentData
+async function choosePaymentMethod(
+  method
 ) {
-  const email =
-    String(
-      paymentData?.email || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const method =
-    String(
-      paymentData?.paymentMethod ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const squares =
-    normalizeSquareList(
-      paymentData?.squares
-    );
 
   if (
-    method !== "zeffy" &&
-    method !== "venmo"
+    !currentReservation
   ) {
-    throw new Error(
-      "That payment method is not valid."
-    );
+
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "Reservation information could not be found.";
+
+    return;
   }
 
-  if (!email) {
-    throw new Error(
-      "Reservation email is missing."
-    );
-  }
+  const paymentLinks = {
 
-  let rows =
-    await getAllRows(
-      googleToken
-    );
+    zeffy:
+      "https://www.zeffy.com/en-US/ticketing/buffalo-bills-season-long-board-2026-akron-rescue-cats",
 
-  await releaseExpiredReservations(
-    googleToken,
-    rows
-  );
-
-  rows =
-    await getAllRows(
-      googleToken
-    );
-
-  const updates = [];
-
-  squares.forEach(
-    function(squareNumber) {
-
-      const row =
-        rows[
-          squareNumber - 1
-        ];
-
-      if (
-        normalizeStatus(
-          row[1]
-        ) !== "Pending"
-      ) {
-        throw new Error(
-          "Square " +
-          squareNumber +
-          " is no longer pending."
-        );
-      }
-
-      const reservedEmail =
-        String(
-          row[3] || ""
-        )
-          .trim()
-          .toLowerCase();
-
-      if (
-        reservedEmail !==
-        email
-      ) {
-        throw new Error(
-          "The reservation email does not match."
-        );
-      }
-
-      const sheetRow =
-        squareNumber + 1;
-
-      updates.push({
-        range:
-          `${SHEET_NAME}!G${sheetRow}:H${sheetRow}`,
-
-        values: [[
-          method === "zeffy"
-            ? "Zeffy"
-            : "Venmo",
-
-          "Payment Pending"
-        ]]
-      });
-    }
-  );
-
-  await batchUpdateRows(
-    googleToken,
-    updates
-  );
-
-  return {
-    success:
-      true,
-
-    paymentMethod:
-      method,
-
-    squares:
-      squares
+    venmo:
+      "https://account.venmo.com/u/akronrescuecats"
   };
+
+  const paymentUrl =
+    paymentLinks[
+      method
+    ];
+
+  if (
+    !paymentUrl
+  ) {
+    return;
+  }
+
+  const paymentWindow =
+    window.open(
+      "",
+      "_blank"
+    );
+
+  const paymentStatus =
+    document.getElementById(
+      "paymentStatus"
+    );
+
+  paymentStatus.textContent =
+    "Saving payment method...";
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/season-long",
+        {
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              action:
+                "savePaymentMethod",
+
+              data: {
+
+                squares:
+                  currentReservation.squares,
+
+                email:
+                  currentReservation.email,
+
+                paymentMethod:
+                  method
+              }
+            })
+        }
+      );
+
+    const result =
+      await response.json();
+
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+
+      throw new Error(
+        result.message ||
+        "The payment method could not be saved."
+      );
+    }
+
+    paymentStatus.textContent =
+      "Opening payment page...";
+
+    if (
+      paymentWindow
+    ) {
+
+      paymentWindow.location.href =
+        paymentUrl;
+
+    } else {
+
+      window.location.href =
+        paymentUrl;
+    }
+
+  } catch (error) {
+
+    if (
+      paymentWindow
+    ) {
+      paymentWindow.close();
+    }
+
+    paymentStatus.textContent =
+      error.message ||
+      String(error);
+  }
 }
 
 
 /*
 =====================================================
-MAIN API
+PAYPAL
 =====================================================
 */
 
-export default {
+function renderPayPalButton() {
 
-  async fetch(request) {
+  const container =
+    document.getElementById(
+      "paypal-button-container"
+    );
 
-    try {
+  container.innerHTML =
+    "";
 
-      const token =
-        await getAccessToken();
+  if (
+    !currentReservation
+  ) {
+
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "Reservation information could not be found.";
+
+    return;
+  }
+
+  if (
+    typeof paypal ===
+    "undefined"
+  ) {
+
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "PayPal could not load. Please refresh and try again.";
+
+    return;
+  }
+
+  paypal.Buttons({
+
+    style: {
+      layout:
+        "vertical",
+
+      shape:
+        "rect",
+
+      label:
+        "paypal",
+
+      height:
+        45
+    },
 
 
-      /*
-      ===============================
-      GET BOARD
-      ===============================
-      */
+    /*
+    =====================================================
+    CREATE ORDER ON SERVER
+    =====================================================
+    */
 
-      if (
-        request.method ===
-        "GET"
-      ) {
+    createOrder:
+      async function() {
 
-        let rows =
-          await getAllRows(
-            token
+        const paymentStatus =
+          document.getElementById(
+            "paymentStatus"
           );
 
-        await releaseExpiredReservations(
-          token,
-          rows
-        );
+        paymentStatus.textContent =
+          "Starting PayPal checkout...";
 
-        rows =
-          await getAllRows(
-            token
-          );
+        try {
 
-        return Response.json({
-          success:
-            true,
+          const response =
+            await fetch(
+              "/api/season-long",
+              {
+                method:
+                  "POST",
 
-          squares:
-            rowsToPublicSquares(
-              rows
-            )
-        });
-      }
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
 
+                body:
+                  JSON.stringify({
 
-      /*
-      ===============================
-      POST ACTIONS
-      ===============================
-      */
+                    action:
+                      "createPayPalOrder",
 
-      if (
-        request.method ===
-        "POST"
-      ) {
+                    data: {
 
-        const body =
-          await request.json();
+                      squares:
+                        currentReservation.squares,
 
+                      email:
+                        currentReservation.email,
 
-        if (
-          body.action ===
-          "reserveSquares"
-        ) {
+                      reservationId:
+                        currentReservation.reservationId
+                    }
+                  })
+              }
+            );
 
-          return Response.json(
-            await reserveSquares(
-              token,
-              body.data
-            )
-          );
-        }
+          const result =
+            await response.json();
 
+          if (
+            !response.ok ||
+            !result.success ||
+            !result.orderId
+          ) {
 
-        if (
-          body.action ===
-          "createPayPalOrder"
-        ) {
+            paymentStatus.textContent =
+              "PayPal error: " +
+              (
+                result.message ||
+                "Checkout could not be started."
+              );
 
-          return Response.json(
-            await createPayPalOrder(
-              token,
-              body.data
-            )
-          );
-        }
-
-
-        if (
-          body.action ===
-          "capturePayPalOrder"
-        ) {
-
-          return Response.json(
-            await capturePayPalOrder(
-              token,
-              body.data
-            )
-          );
-        }
-
-
-        if (
-          body.action ===
-          "savePaymentMethod"
-        ) {
-
-          return Response.json(
-            await savePaymentMethod(
-              token,
-              body.data
-            )
-          );
-        }
-
-
-        return Response.json(
-          {
-            success:
-              false,
-
-            message:
-              "Invalid API action."
-          },
-          {
-            status:
-              400
+            throw new Error(
+              result.message ||
+              "PayPal checkout could not be started."
+            );
           }
+
+          paymentStatus.textContent =
+            "";
+
+          return result.orderId;
+
+        } catch (error) {
+
+          paymentStatus.textContent =
+            "PayPal error: " +
+            (
+              error.message ||
+              String(error)
+            );
+
+          throw error;
+        }
+      },
+
+
+    /*
+    =====================================================
+    SERVER CAPTURES PAYMENT AFTER APPROVAL
+    =====================================================
+    */
+
+    onApprove:
+      async function(data) {
+
+        const paymentStatus =
+          document.getElementById(
+            "paymentStatus"
+          );
+
+        paymentStatus.textContent =
+          "Completing your PayPal payment...";
+
+        try {
+
+          const response =
+            await fetch(
+              "/api/season-long",
+              {
+                method:
+                  "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+
+                body:
+                  JSON.stringify({
+
+                    action:
+                      "capturePayPalOrder",
+
+                    data: {
+
+                      orderId:
+                        data.orderID,
+
+                      squares:
+                        currentReservation.squares,
+
+                      email:
+                        currentReservation.email,
+
+                      reservationId:
+                        currentReservation.reservationId
+                    }
+                  })
+              }
+            );
+
+          const result =
+            await response.json();
+
+          if (
+            !response.ok ||
+            !result.success
+          ) {
+
+            throw new Error(
+              result.message ||
+              "The PayPal payment could not be confirmed."
+            );
+          }
+
+          paymentStatus.textContent =
+            "Payment completed! Your squares are now sold.";
+
+          currentReservation =
+            null;
+
+          selectedSquares.clear();
+
+          await loadBoard();
+
+        } catch (error) {
+
+          paymentStatus.textContent =
+            "The payment could not be completed: " +
+            (
+              error.message ||
+              String(error)
+            );
+        }
+      },
+
+
+    onCancel:
+      function() {
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent =
+          "The PayPal payment was canceled. Your squares remain pending.";
+      },
+
+
+    onError:
+      function(error) {
+
+        console.error(
+          "PayPal SDK error:",
+          error
         );
+
+        const paymentStatus =
+          document.getElementById(
+            "paymentStatus"
+          );
+
+        if (
+          !paymentStatus.textContent ||
+          !paymentStatus.textContent.startsWith(
+            "PayPal error:"
+          )
+        ) {
+
+          paymentStatus.textContent =
+            "PayPal error: " +
+            (
+              error?.message ||
+              String(error) ||
+              "PayPal checkout failed."
+            );
+        }
       }
 
+  }).render(
+    "#paypal-button-container"
+  );
+}
 
-      return Response.json(
-        {
-          success:
-            false,
 
-          message:
-            "Method not allowed."
-        },
-        {
-          status:
-            405
-        }
+/*
+=====================================================
+CLICK OUTSIDE MODALS
+=====================================================
+*/
+
+window.addEventListener(
+  "click",
+
+  function(event) {
+
+    const reservationModal =
+      document.getElementById(
+        "reservationModal"
       );
 
-
-    } catch (error) {
-
-      console.error(
-        "Preseason API error:",
-        error
+    const paymentModal =
+      document.getElementById(
+        "paymentModal"
       );
 
-      return Response.json(
-        {
-          success:
-            false,
+    if (
+      event.target ===
+      reservationModal
+    ) {
 
-          message:
-            error?.message ||
-            String(error)
-        },
-        {
-          status:
-            500
-        }
-      );
+      closeReservationModal();
+    }
+
+    if (
+      event.target ===
+      paymentModal
+    ) {
+
+      closePaymentModal();
     }
   }
-};
+);
+
+</script>
+
+</body>
+</html>
