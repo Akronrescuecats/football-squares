@@ -169,11 +169,11 @@ SPREADSHEET
 function getSpreadsheetId() {
   const id =
     process.env
-      .PRESEASON_SPREADSHEET_ID;
+      .PRESEASON_3_SPREADSHEET_ID;
 
   if (!id) {
     throw new Error(
-      "PRESEASON_SPREADSHEET_ID is missing."
+      "PRESEASON_3_SPREADSHEET_ID is missing."
     );
   }
 
@@ -336,15 +336,11 @@ function normalizeStatus(
       .trim()
       .toLowerCase();
 
-  if (
-    status === "sold"
-  ) {
+  if (status === "sold") {
     return "Sold";
   }
 
-  if (
-    status === "pending"
-  ) {
+  if (status === "pending") {
     return "Pending";
   }
 
@@ -355,9 +351,7 @@ function normalizeStatus(
 function normalizeSquareList(
   values
 ) {
-  if (
-    !Array.isArray(values)
-  ) {
+  if (!Array.isArray(values)) {
     throw new Error(
       "Please select at least one square."
     );
@@ -388,9 +382,7 @@ function normalizeSquareList(
         }
       );
 
-  if (
-    squares.length === 0
-  ) {
+  if (squares.length === 0) {
     throw new Error(
       "Please select at least one square."
     );
@@ -813,11 +805,6 @@ async function getPayPalOrder(
 =====================================================
 PAYPAL IDEMPOTENCY ID
 =====================================================
-
-Create and Capture need DIFFERENT stable IDs.
-
-Both remain below PayPal's request-ID length limit.
-=====================================================
 */
 
 function makePayPalRequestId(
@@ -1024,7 +1011,7 @@ async function createPayPalOrder(
                   reservation.reservationId,
 
                 description:
-                  "Akron Rescue Cats Preseason Football Squares: " +
+                  "Akron Rescue Cats Preseason Game 3 Football Squares: " +
                   reservation.squares.join(", "),
 
                 amount: {
@@ -1095,7 +1082,6 @@ function verifyCompletedPayPalOrder(
       : [];
 
   let paidTotal = 0;
-
   let reservationMatches =
     false;
 
@@ -1164,9 +1150,7 @@ function verifyCompletedPayPalOrder(
     }
   );
 
-  if (
-    !reservationMatches
-  ) {
+  if (!reservationMatches) {
     throw new Error(
       "The PayPal payment does not match this reservation."
     );
@@ -1208,11 +1192,6 @@ async function capturePayPalOrder(
     );
   }
 
-  /*
-  First check whether this exact PayPal order
-  was already successfully recorded.
-  */
-
   let currentRows =
     await getAllRows(
       googleToken
@@ -1238,9 +1217,7 @@ async function capturePayPalOrder(
       }
     );
 
-  if (
-    alreadyPaid
-  ) {
+  if (alreadyPaid) {
     return {
       success:
         true,
@@ -1301,11 +1278,6 @@ async function capturePayPalOrder(
 
   const captureResult =
     await response.json();
-
-  /*
-  Whether this was the first request or a retry,
-  retrieve the final order from PayPal.
-  */
 
   let paypalOrder;
 
@@ -1378,11 +1350,6 @@ async function capturePayPalOrder(
       });
     }
   );
-
-  /*
-  Sold / PayPal / Paid / Order ID /
-  Amount / Payment Date are written together.
-  */
 
   await batchUpdateRows(
     googleToken,
@@ -1555,12 +1522,6 @@ export default {
         await getAccessToken();
 
 
-      /*
-      ===============================
-      GET BOARD
-      ===============================
-      */
-
       if (
         request.method ===
         "GET"
@@ -1592,12 +1553,6 @@ export default {
         });
       }
 
-
-      /*
-      ===============================
-      POST ACTIONS
-      ===============================
-      */
 
       if (
         request.method ===
@@ -1698,7 +1653,7 @@ export default {
     } catch (error) {
 
       console.error(
-        "Preseason API error:",
+        "Preseason Game 3 API error:",
         error
       );
 
