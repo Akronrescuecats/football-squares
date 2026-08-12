@@ -173,7 +173,7 @@ function getSpreadsheetId() {
 
   if (!id) {
     throw new Error(
-      "PRESEASON_SPREADSHEET_ID is missing."
+      "SEASON_LONG_SPREADSHEET_ID is missing."
     );
   }
 
@@ -1024,7 +1024,7 @@ async function createPayPalOrder(
                   reservation.reservationId,
 
                 description:
-                  "Akron Rescue Cats Preseason Football Squares: " +
+                  "Akron Rescue Cats Season-Long Football Squares: " +
                   reservation.squares.join(", "),
 
                 amount: {
