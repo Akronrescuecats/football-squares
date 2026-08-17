@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Akron Rescue Cats Regular Season Board 1 Football Squares</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f3f4f6;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      color: #111827;
+    }
+
+    .page {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 14px;
+      color: #00338d;
+      font-weight: bold;
+      text-decoration: none;
+    }
+
+    h1 {
+      margin: 0 0 5px;
+      color: #00338d;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #c60c30;
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+    .price-line {
+      margin: 10px 0;
+      color: #00338d;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .instructions {
+      max-width: 650px;
+      margin: 12px auto;
+      color: #374151;
+      line-height: 1.5;
+    }
+
+    .legend {
+      margin: 18px 0;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .selection-bar {
+      position: sticky;
+      top: 5px;
+      z-index: 20;
+      max-width: 650px;
+      margin: 0 auto 16px;
+      padding: 12px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    }
+
+    .selection-summary {
+      margin-bottom: 10px;
+      color: #00338d;
+      font-weight: bold;
+    }
+
+    button {
+      font-family: inherit;
+    }
+
+    .reserve-button,
+    .clear-button,
+    .refresh-button {
+      padding: 11px 16px;
+      border: none;
+      border-radius: 7px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .reserve-button {
+      background: #c60c30;
+      color: white;
+    }
+
+    .reserve-button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .clear-button {
+      margin-left: 6px;
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .refresh-button {
+      margin-top: 12px;
+      background: #00338d;
+      color: white;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(10, minmax(42px, 65px));
+      gap: 5px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+
+    .square {
+      aspect-ratio: 1;
+      min-height: 50px;
+      padding: 3px;
+      border: 2px solid transparent;
+      border-radius: 7px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .available {
+      background: #d1fae5;
+      color: #065f46;
+      cursor: pointer;
+    }
+
+    .available:hover {
+      background: #a7f3d0;
+    }
+
+    .selected {
+      background: #2563eb;
+      color: white;
+      border-color: #00338d;
+      cursor: pointer;
+    }
+
+    .pending {
+      background: #fef3c7;
+      color: #92400e;
+      cursor: not-allowed;
+    }
+
+    .sold {
+      background: #fecaca;
+      color: #991b1b;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      margin: 35px 0;
+      font-weight: bold;
+      color: #00338d;
+    }
+
+    .error {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 15px;
+      background: #fee2e2;
+      border-radius: 8px;
+      color: #991b1b;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      padding: 15px;
+      background: rgba(0,0,0,.65);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 430px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .modal-content h2 {
+      margin-top: 0;
+      color: #00338d;
+    }
+
+    .selected-list {
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 7px;
+      background: #eff6ff;
+      color: #00338d;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    label {
+      display: block;
+      margin-top: 13px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      margin-top: 5px;
+      padding: 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .button-row button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .submit-button {
+      background: #00338d;
+      color: white;
+    }
+
+    .submit-button:disabled {
+      background: #9ca3af;
+      cursor: wait;
+    }
+
+    .cancel-button {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .message {
+      margin-top: 14px;
+      color: #c60c30;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+
+    .payment-note {
+      padding: 12px;
+      margin: 15px 0;
+      border-radius: 8px;
+      background: #fff7ed;
+      color: #9a3412;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .payment-title {
+      margin: 18px 0 10px;
+      color: #00338d;
+      font-weight: bold;
+    }
+
+    .payment-button {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 14px;
+      border: none;
+      border-radius: 7px;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .zeffy {
+      background: #00338d;
+    }
+
+    .venmo {
+      background: #2563eb;
+    }
+
+    #paypal-button-container {
+      min-height: 45px;
+      margin: 12px 0;
+    }
+
+    @media (max-width: 650px) {
+      body {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 27px;
+      }
+
+      .subtitle {
+        font-size: 19px;
+      }
+
+      .board {
+        grid-template-columns: repeat(5, minmax(48px, 65px));
+      }
+
+      .square {
+        min-height: 55px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="page">
+
+  <a class="back-link" href="/preseason-hub.html">
+    ← Preseason Games
+  </a>
+
+  <h1>Akron Rescue Cats</h1>
+
+  <p class="subtitle">
+    Regular Season Board 1 Football Squares
+  </p>
+
+  <div class="price-line">
+    $25 per square
+  </div>
+
+  <p class="instructions">
+    Tap every green square you would like.
+    Selected squares turn blue.
+    Your squares will be held for 15 minutes after reservation.
+  </p>
+
+  <div class="legend">
+    🟩 Available &nbsp;&nbsp;
+    🟦 Selected &nbsp;&nbsp;
+    🟨 Pending &nbsp;&nbsp;
+    🟥 Sold
+  </div>
+
+  <div class="selection-bar">
+
+    <div
+      id="selectionSummary"
+      class="selection-summary"
+    >
+      No squares selected
+    </div>
+
+    <button
+      id="reserveButton"
+      class="reserve-button"
+      type="button"
+      disabled
+      onclick="openReservationModal()"
+    >
+      Select Squares
+    </button>
+
+    <button
+      id="clearButton"
+      class="clear-button"
+      type="button"
+      style="display:none;"
+      onclick="clearSelections()"
+    >
+      Clear
+    </button>
+
+  </div>
+
+  <div id="loading" class="loading">
+    Loading board...
+  </div>
+
+  <div
+    id="error"
+    class="error"
+    style="display:none;"
+  ></div>
+
+  <div id="board" class="board"></div>
+
+  <button
+    type="button"
+    class="refresh-button"
+    onclick="loadBoard()"
+  >
+    Refresh Board
+  </button>
+
+</div>
+
+
+<!-- RESERVATION MODAL -->
+
+<div id="reservationModal" class="modal">
+
+  <div class="modal-content">
+
+    <h2>Reserve Selected Squares</h2>
+
+    <div
+      id="selectedList"
+      class="selected-list"
+    ></div>
+
+    <form id="reservationForm">
+
+      <label for="buyerName">
+        Name
+      </label>
+
+      <input
+        id="buyerName"
+        type="text"
+        required
+      >
+
+      <label for="buyerEmail">
+        Email
+      </label>
+
+      <input
+        id="buyerEmail"
+        type="email"
+        required
+      >
+
+      <label for="buyerPhone">
+        Phone
+      </label>
+
+      <input
+        id="buyerPhone"
+        type="tel"
+        required
+      >
+
+      <div
+        id="reservationMessage"
+        class="message"
+      ></div>
+
+      <div class="button-row">
+
+        <button
+          type="button"
+          class="cancel-button"
+          onclick="closeReservationModal()"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="submitReservationButton"
+          type="submit"
+          class="submit-button"
+        >
+          Continue to Payment
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- PAYMENT MODAL -->
+
+<div id="paymentModal" class="modal">
+
+  <div class="modal-content">
+
+    <h2>Squares Reserved!</h2>
+
+    <div
+      id="paymentSummary"
+      class="selected-list"
+    ></div>
+
+    <div class="payment-note">
+      Your squares are being held for
+      <strong>15 minutes</strong>.
+      Please complete payment before the hold expires.
+    </div>
+
+    <div class="payment-title">
+      Pay automatically with PayPal
+    </div>
+
+    <div id="paypal-button-container"></div>
+
+    <div class="payment-title">
+      Other Payment Options
+    </div>
+
+    <button
+      type="button"
+      class="payment-button zeffy"
+      onclick="choosePaymentMethod('zeffy')"
+    >
+      Pay with Zeffy — Preferred
+    </button>
+
+    <button
+      type="button"
+      class="payment-button venmo"
+      onclick="choosePaymentMethod('venmo')"
+    >
+      Pay with Venmo
+    </button>
+
+    <div
+      id="paymentStatus"
+      class="message"
+    ></div>
+
+    <div class="button-row">
+
+      <button
+        type="button"
+        class="cancel-button"
+        onclick="closePaymentModal()"
+      >
+        Close
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- PAYPAL SDK -->
+
+<script src="https://www.paypal.com/sdk/js?client-id=AQ1WSxSGp7DG_e5Hvf8yvECA1ScYDu4rrKHrV3xxIYqaXl3V54Z-2N-W65IJimxAWcjd4Sn-NxPt5RZa&currency=USD&intent=capture"></script>
+
+
+<script>
+
+const PRICE_PER_SQUARE = 25;
+
+let currentSquares = [];
+let selectedSquares = new Set();
+let currentReservation = null;
+
+
+/*
+=====================================================
+START
+=====================================================
+*/
+
+document.addEventListener(
+  "DOMContentLoaded",
+  loadBoard
+);
+
+
+/*
+=====================================================
+LOAD BOARD
+=====================================================
+*/
+
+async function loadBoard() {
+
+  const loading =
+    document.getElementById(
+      "loading"
+    );
+
+  const errorBox =
+    document.getElementById(
+      "error"
+    );
+
+  loading.style.display =
+    "block";
+
+  loading.textContent =
+    "Loading board...";
+
+  errorBox.style.display =
+    "none";
+
+  errorBox.textContent =
+    "";
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/regular-1",
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+    const data =
+      await response.json();
+
+    if (
+      !response.ok ||
+      !data.success
+    ) {
+      throw new Error(
+        data.message ||
+        "The board could not load."
+      );
+    }
+
+    currentSquares =
+      Array.isArray(
+        data.squares
+      )
+        ? data.squares
+        : [];
+
+    cleanSelections();
+
+    displayBoard();
+
+    loading.style.display =
+      "none";
+
+  } catch (error) {
+
+    loading.style.display =
+      "none";
+
+    errorBox.style.display =
+      "block";
+
+    errorBox.textContent =
+      "The board could not load: " +
+      (
+        error.message ||
+        String(error)
+      );
+  }
+}
+
+
+/*
+=====================================================
+BOARD
+=====================================================
+*/
+
+function cleanSelections() {
+
+  const available =
+    new Set(
+      currentSquares
+        .filter(
+          function(item) {
+
+            return (
+              String(
+                item.status ||
+                "Available"
+              )
+                .toLowerCase()
+              === "available"
+            );
+          }
+        )
+        .map(
+          function(item) {
+
+            return Number(
+              item.square
+            );
+          }
+        )
+    );
+
+  Array
+    .from(
+      selectedSquares
+    )
+    .forEach(
+      function(number) {
+
+        if (
+          !available.has(
+            number
+          )
+        ) {
+          selectedSquares.delete(
+            number
+          );
+        }
+      }
+    );
+}
+
+
+function displayBoard() {
+
+  const board =
+    document.getElementById(
+      "board"
+    );
+
+  board.innerHTML =
+    "";
+
+  currentSquares
+    .slice()
+    .sort(
+      function(a, b) {
+
+        return (
+          Number(a.square) -
+          Number(b.square)
+        );
+      }
+    )
+    .forEach(
+      function(item) {
+
+        const number =
+          Number(
+            item.square
+          );
+
+        const status =
+          String(
+            item.status ||
+            "Available"
+          ).toLowerCase();
+
+        const button =
+          document.createElement(
+            "button"
+          );
+
+        button.type =
+          "button";
+
+        button.classList.add(
+          "square"
+        );
+
+        if (
+          status ===
+            "available" &&
+          selectedSquares.has(
+            number
+          )
+        ) {
+
+          button.classList.add(
+            "selected"
+          );
+
+        } else {
+
+          button.classList.add(
+            status
+          );
+        }
+
+        button.textContent =
+          number;
+
+        button.title =
+          "Square " +
+          number +
+          ": " +
+          item.status;
+
+        if (
+          status ===
+          "available"
+        ) {
+
+          button.onclick =
+            function() {
+
+              toggleSquare(
+                number
+              );
+            };
+
+        } else {
+
+          button.disabled =
+            true;
+        }
+
+        board.appendChild(
+          button
+        );
+      }
+    );
+
+  updateSelectionSummary();
+}
+
+
+function toggleSquare(number) {
+
+  if (
+    selectedSquares.has(
+      number
+    )
+  ) {
+
+    selectedSquares.delete(
+      number
+    );
+
+  } else {
+
+    selectedSquares.add(
+      number
+    );
+  }
+
+  displayBoard();
+}
+
+
+function clearSelections() {
+
+  selectedSquares.clear();
+
+  displayBoard();
+}
+
+
+function getSelectedSquares() {
+
+  return Array
+    .from(
+      selectedSquares
+    )
+    .sort(
+      function(a, b) {
+
+        return a - b;
+      }
+    );
+}
+
+
+function updateSelectionSummary() {
+
+  const selected =
+    getSelectedSquares();
+
+  const summary =
+    document.getElementById(
+      "selectionSummary"
+    );
+
+  const button =
+    document.getElementById(
+      "reserveButton"
+    );
+
+  const clear =
+    document.getElementById(
+      "clearButton"
+    );
+
+  if (
+    selected.length === 0
+  ) {
+
+    summary.textContent =
+      "No squares selected";
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      "Select Squares";
+
+    clear.style.display =
+      "none";
+
+    return;
+  }
+
+  const total =
+    selected.length *
+    PRICE_PER_SQUARE;
+
+  summary.textContent =
+    selected.length +
+    (
+      selected.length === 1
+        ? " square"
+        : " squares"
+    ) +
+    " selected — Total: $" +
+    total;
+
+  button.disabled =
+    false;
+
+  button.textContent =
+    "Reserve " +
+    selected.length +
+    (
+      selected.length === 1
+        ? " Square"
+        : " Squares"
+    ) +
+    " ($" +
+    total +
+    ")";
+
+  clear.style.display =
+    "inline-block";
+}
+
+
+/*
+=====================================================
+RESERVATION MODAL
+=====================================================
+*/
+
+function openReservationModal() {
+
+  const squares =
+    getSelectedSquares();
+
+  if (
+    !squares.length
+  ) {
+    return;
+  }
+
+  const total =
+    squares.length *
+    PRICE_PER_SQUARE;
+
+  document.getElementById(
+    "selectedList"
+  ).textContent =
+    "Squares: " +
+    squares.join(", ") +
+    " — Total: $" +
+    total;
+
+  document.getElementById(
+    "reservationMessage"
+  ).textContent =
+    "";
+
+  document.getElementById(
+    "reservationModal"
+  ).style.display =
+    "flex";
+}
+
+
+function closeReservationModal() {
+
+  document.getElementById(
+    "reservationModal"
+  ).style.display =
+    "none";
+}
+
+
+/*
+=====================================================
+PAYMENT MODAL
+=====================================================
+*/
+
+function closePaymentModal() {
+
+  document.getElementById(
+    "paymentModal"
+  ).style.display =
+    "none";
+
+  document.getElementById(
+    "paymentStatus"
+  ).textContent =
+    "";
+
+  loadBoard();
+}
+
+
+/*
+=====================================================
+RESERVE SQUARES
+=====================================================
+*/
+
+document
+  .getElementById(
+    "reservationForm"
+  )
+  .addEventListener(
+    "submit",
+
+    async function(event) {
+
+      event.preventDefault();
+
+      const button =
+        document.getElementById(
+          "submitReservationButton"
+        );
+
+      const message =
+        document.getElementById(
+          "reservationMessage"
+        );
+
+      const squares =
+        getSelectedSquares();
+
+      if (
+        !squares.length
+      ) {
+
+        message.textContent =
+          "Please select at least one square.";
+
+        return;
+      }
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        "Reserving...";
+
+      message.textContent =
+        "";
+
+      try {
+
+        const response =
+          await fetch(
+            "/api/regular-1",
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify({
+
+                  action:
+                    "reserveSquares",
+
+                  data: {
+
+                    squares:
+                      squares,
+
+                    name:
+                      document
+                        .getElementById(
+                          "buyerName"
+                        )
+                        .value
+                        .trim(),
+
+                    email:
+                      document
+                        .getElementById(
+                          "buyerEmail"
+                        )
+                        .value
+                        .trim(),
+
+                    phone:
+                      document
+                        .getElementById(
+                          "buyerPhone"
+                        )
+                        .value
+                        .trim()
+                  }
+                })
+            }
+          );
+
+        const result =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !result.success
+        ) {
+
+          throw new Error(
+            result.message ||
+            "The reservation could not be completed."
+          );
+        }
+
+        currentReservation =
+          result;
+
+        closeReservationModal();
+
+        selectedSquares.clear();
+
+        document
+          .getElementById(
+            "reservationForm"
+          )
+          .reset();
+
+        document.getElementById(
+          "paymentSummary"
+        ).innerHTML =
+          "<strong>Squares:</strong> " +
+          result.squares.join(", ") +
+
+          "<br><strong>Price per square:</strong> $" +
+          PRICE_PER_SQUARE +
+
+          "<br><strong>Total:</strong> $" +
+          Number(
+            result.total
+          ).toFixed(2);
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent =
+          "";
+
+        document.getElementById(
+          "paymentModal"
+        ).style.display =
+          "flex";
+
+        renderPayPalButton();
+
+        await loadBoard();
+
+      } catch (error) {
+
+        message.textContent =
+          error.message ||
+          String(error);
+
+        await loadBoard();
+
+      } finally {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          "Continue to Payment";
+      }
+    }
+  );
+
+
+/*
+=====================================================
+ZEFFY / VENMO
+=====================================================
+*/
+
+async function choosePaymentMethod(
+  method
+) {
+
+  if (
+    !currentReservation
+  ) {
+
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "Reservation information could not be found.";
+
+    return;
+  }
+
+  const paymentLinks = {
+
+    zeffy:
+      "https://www.zeffy.com/en-US/ticketing/buffalo-bills-regular-season-2026-akron-rescue-cats",
+
+    venmo:
+      "https://account.venmo.com/u/akronrescuecats"
+  };
+
+  const paymentUrl =
+    paymentLinks[
+      method
+    ];
+
+  if (
+    !paymentUrl
+  ) {
+    return;
+  }
+
+  const paymentWindow =
+    window.open(
+      "",
+      "_blank"
+    );
+
+  const paymentStatus =
+    document.getElementById(
+      "paymentStatus"
+    );
+
+  paymentStatus.textContent =
+    "Saving payment method...";
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/regular-1",
+        {
+          method:
+            "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+
+              action:
+                "savePaymentMethod",
+
+              data: {
+
+                squares:
+                  currentReservation.squares,
+
+                email:
+                  currentReservation.email,
+
+                paymentMethod:
+                  method
+              }
+            })
+        }
+      );
+
+    const result =
+      await response.json();
+
+    if (
+      !response.ok ||
+      !result.success
+    ) {
+
+      throw new Error(
+        result.message ||
+        "The payment method could not be saved."
+      );
+    }
+
+    paymentStatus.textContent =
+      "Opening payment page...";
+
+    if (
+      paymentWindow
+    ) {
+
+      paymentWindow.location.href =
+        paymentUrl;
+
+    } else {
+
+      window.location.href =
+        paymentUrl;
+    }
+
+  } catch (error) {
+
+    if (
+      paymentWindow
+    ) {
+      paymentWindow.close();
+    }
+
+    paymentStatus.textContent =
+      error.message ||
+      String(error);
+  }
+}
+
+
+/*
+=====================================================
+PAYPAL
+=====================================================
+*/
+
+function renderPayPalButton() {
+
+  const container =
+    document.getElementById(
+      "paypal-button-container"
+    );
+
+  container.innerHTML =
+    "";
+
+  if (
+    !currentReservation
+  ) {
+
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "Reservation information could not be found.";
+
+    return;
+  }
+
+  if (
+    typeof paypal ===
+    "undefined"
+  ) {
+
+    document.getElementById(
+      "paymentStatus"
+    ).textContent =
+      "PayPal could not load. Please refresh and try again.";
+
+    return;
+  }
+
+  paypal.Buttons({
+
+    style: {
+      layout:
+        "vertical",
+
+      shape:
+        "rect",
+
+      label:
+        "paypal",
+
+      height:
+        45
+    },
+
+
+    /*
+    =====================================================
+    CREATE ORDER ON SERVER
+    =====================================================
+    */
+
+    createOrder:
+  async function() {
+
+    const paymentStatus =
+      document.getElementById(
+        "paymentStatus"
+      );
+
+    paymentStatus.textContent =
+      "Starting PayPal checkout...";
+
+    try {
+
+      const response =
+        await fetch(
+          "/api/regular-1",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body:
+              JSON.stringify({
+                action:
+                  "createPayPalOrder",
+
+                data: {
+                  squares:
+                    currentReservation.squares,
+
+                  email:
+                    currentReservation.email,
+
+                  reservationId:
+                    currentReservation.reservationId
+                }
+              })
+          }
+        );
+
+      const result =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !result.success ||
+        !result.orderId
+      ) {
+        paymentStatus.textContent =
+          "PayPal error: " +
+          (
+            result.message ||
+            "Checkout could not be started."
+          );
+
+        throw new Error(
+          result.message ||
+          "PayPal checkout could not be started."
+        );
+      }
+
+      paymentStatus.textContent =
+        "";
+
+      return result.orderId;
+
+    } catch (error) {
+
+      paymentStatus.textContent =
+        "PayPal error: " +
+        (
+          error.message ||
+          String(error)
+        );
+
+      throw error;
+    }
+  },
+    /*
+    =====================================================
+    SERVER CAPTURES PAYMENT AFTER APPROVAL
+    =====================================================
+    */
+
+    onApprove:
+      async function(data) {
+
+        const paymentStatus =
+          document.getElementById(
+            "paymentStatus"
+          );
+
+        paymentStatus.textContent =
+          "Completing your PayPal payment...";
+
+        try {
+
+          const response =
+            await fetch(
+              "/api/regular-1",
+              {
+                method:
+                  "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+
+                body:
+                  JSON.stringify({
+
+                    action:
+                      "capturePayPalOrder",
+
+                    data: {
+
+                      orderId:
+                        data.orderID,
+
+                      squares:
+                        currentReservation.squares,
+
+                      email:
+                        currentReservation.email,
+
+                      reservationId:
+                        currentReservation.reservationId
+                    }
+                  })
+              }
+            );
+
+          const result =
+            await response.json();
+
+          if (
+            !response.ok ||
+            !result.success
+          ) {
+
+            throw new Error(
+              result.message ||
+              "The PayPal payment could not be confirmed."
+            );
+          }
+
+          paymentStatus.textContent =
+            "Payment completed! Your squares are now sold.";
+
+          currentReservation =
+            null;
+
+          selectedSquares.clear();
+
+          await loadBoard();
+
+        } catch (error) {
+
+          paymentStatus.textContent =
+            "The payment could not be completed: " +
+            (
+              error.message ||
+              String(error)
+            );
+        }
+      },
+
+
+    onCancel:
+      function() {
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent =
+          "The PayPal payment was canceled. Your squares remain pending.";
+      },
+
+
+  onError:
+  function(error) {
+
+    console.error(
+      "PayPal SDK error:",
+      error
+    );
+
+    const paymentStatus =
+      document.getElementById(
+        "paymentStatus"
+      );
+
+    /*
+      Do not overwrite the detailed error
+      already returned by our server.
+    */
+    if (
+      !paymentStatus.textContent ||
+      !paymentStatus.textContent.startsWith(
+        "PayPal error:"
+      )
+    ) {
+      paymentStatus.textContent =
+        "PayPal error: " +
+        (
+          error?.message ||
+          String(error) ||
+          "PayPal checkout failed."
+        );
+    }
+  }
+
+  }).render(
+    "#paypal-button-container"
+  );
+}
+
+
+/*
+=====================================================
+CLICK OUTSIDE MODALS
+=====================================================
+*/
+
+window.addEventListener(
+  "click",
+
+  function(event) {
+
+    const reservationModal =
+      document.getElementById(
+        "reservationModal"
+      );
+
+    const paymentModal =
+      document.getElementById(
+        "paymentModal"
+      );
+
+    if (
+      event.target ===
+      reservationModal
+    ) {
+
+      closeReservationModal();
+    }
+
+    if (
+      event.target ===
+      paymentModal
+    ) {
+
+      closePaymentModal();
+    }
+  }
+);
+
+</script>
+
+</body>
+</html>
