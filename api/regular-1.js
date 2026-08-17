@@ -1023,9 +1023,9 @@ async function createPayPalOrder(
                 custom_id:
                   reservation.reservationId,
 
-                description:
-                  "Akron Rescue Cats Regular Season Board 1 Football Squares: " +
-                  reservation.squares.join(", "),
+  description:
+  "Akron Rescue Cats Regular Season Board 1 Football Squares: " +
+  reservation.squares.join(", "),
 
                 amount: {
                   currency_code:
