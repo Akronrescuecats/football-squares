@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -8,9 +10,12 @@
     content="width=device-width, initial-scale=1"
   >
 
-  <title>Akron Rescue Cats Regular Season Board 1 Football Squares</title>
+  <title>
+    Akron Rescue Cats Regular Season Football Squares
+  </title>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
@@ -185,7 +190,6 @@
       border-radius: 8px;
       color: #991b1b;
       font-weight: bold;
-      line-height: 1.5;
     }
 
     .modal {
@@ -260,11 +264,6 @@
       color: white;
     }
 
-    .submit-button:disabled {
-      background: #9ca3af;
-      cursor: wait;
-    }
-
     .cancel-button {
       background: #e5e7eb;
       color: #111827;
@@ -303,7 +302,6 @@
       color: white;
       font-size: 16px;
       font-weight: bold;
-      text-align: center;
       cursor: pointer;
     }
 
@@ -321,41 +319,42 @@
     }
 
     @media (max-width: 650px) {
+
       body {
         padding: 12px;
       }
 
-      h1 {
-        font-size: 27px;
-      }
-
-      .subtitle {
-        font-size: 19px;
-      }
-
       .board {
-        grid-template-columns: repeat(5, minmax(48px, 65px));
+        grid-template-columns:
+          repeat(5, minmax(48px, 65px));
       }
 
       .square {
         min-height: 55px;
       }
     }
+
   </style>
+
 </head>
 
 <body>
 
 <div class="page">
 
-  <a class="back-link" href="/regular-1.html">
-    ← Regular Season Games
+  <a
+    class="back-link"
+    href="/regular-season.html"
+  >
+    ← Regular Season Boards
   </a>
 
-  <h1>Akron Rescue Cats</h1>
+  <h1>
+    Akron Rescue Cats
+  </h1>
 
   <p class="subtitle">
-    Regular Season Board 1 Football Squares
+    Regular Season — Week 1
   </p>
 
   <div class="price-line">
@@ -406,7 +405,10 @@
 
   </div>
 
-  <div id="loading" class="loading">
+  <div
+    id="loading"
+    class="loading"
+  >
     Loading board...
   </div>
 
@@ -416,7 +418,10 @@
     style="display:none;"
   ></div>
 
-  <div id="board" class="board"></div>
+  <div
+    id="board"
+    class="board"
+  ></div>
 
   <button
     type="button"
@@ -431,11 +436,16 @@
 
 <!-- RESERVATION MODAL -->
 
-<div id="reservationModal" class="modal">
+<div
+  id="reservationModal"
+  class="modal"
+>
 
   <div class="modal-content">
 
-    <h2>Reserve Selected Squares</h2>
+    <h2>
+      Reserve Selected Squares
+    </h2>
 
     <div
       id="selectedList"
@@ -508,11 +518,16 @@
 
 <!-- PAYMENT MODAL -->
 
-<div id="paymentModal" class="modal">
+<div
+  id="paymentModal"
+  class="modal"
+>
 
   <div class="modal-content">
 
-    <h2>Squares Reserved!</h2>
+    <h2>
+      Squares Reserved!
+    </h2>
 
     <div
       id="paymentSummary"
@@ -573,25 +588,32 @@
 </div>
 
 
-<!-- PAYPAL SDK -->
+<!-- PAYPAL -->
 
-<script src="https://www.paypal.com/sdk/js?client-id=AQ1WSxSGp7DG_e5Hvf8yvECA1ScYDu4rrKHrV3xxIYqaXl3V54Z-2N-W65IJimxAWcjd4Sn-NxPt5RZa&currency=USD&intent=capture"></script>
+<script
+  src="https://www.paypal.com/sdk/js?client-id=AQ1WSxSGp7DG_e5Hvf8yvECA1ScYDu4rrKHrV3xxIYqaXl3V54Z-2N-W65IJimxAWcjd4Sn-NxPt5RZa&currency=USD&intent=capture">
+</script>
 
 
 <script>
 
 const PRICE_PER_SQUARE = 25;
+const API_URL = "/api/regular-1";
+
+const PAYMENT_LINKS = {
+
+  zeffy:
+    "https://www.zeffy.com/en-US/ticketing/buffalo-bills-regular-season-2026-akron-rescue-cats",
+
+  venmo:
+    "https://account.venmo.com/u/akronrescuecats"
+};
+
 
 let currentSquares = [];
 let selectedSquares = new Set();
 let currentReservation = null;
 
-
-/*
-=====================================================
-START
-=====================================================
-*/
 
 document.addEventListener(
   "DOMContentLoaded",
@@ -608,32 +630,21 @@ LOAD BOARD
 async function loadBoard() {
 
   const loading =
-    document.getElementById(
-      "loading"
-    );
+    document.getElementById("loading");
 
   const errorBox =
-    document.getElementById(
-      "error"
-    );
+    document.getElementById("error");
 
-  loading.style.display =
-    "block";
+  loading.style.display = "block";
+  loading.textContent = "Loading board...";
 
-  loading.textContent =
-    "Loading board...";
-
-  errorBox.style.display =
-    "none";
-
-  errorBox.textContent =
-    "";
+  errorBox.style.display = "none";
 
   try {
 
     const response =
       await fetch(
-        "/api/regular-1",
+        API_URL,
         {
           method: "GET",
           cache: "no-store"
@@ -654,14 +665,11 @@ async function loadBoard() {
     }
 
     currentSquares =
-      Array.isArray(
-        data.squares
-      )
+      Array.isArray(data.squares)
         ? data.squares
         : [];
 
     cleanSelections();
-
     displayBoard();
 
     loading.style.display =
@@ -696,47 +704,33 @@ function cleanSelections() {
   const available =
     new Set(
       currentSquares
-        .filter(
-          function(item) {
-
-            return (
-              String(
-                item.status ||
-                "Available"
-              )
-                .toLowerCase()
-              === "available"
-            );
-          }
-        )
-        .map(
-          function(item) {
-
-            return Number(
-              item.square
-            );
-          }
-        )
+        .filter(function(item) {
+          return (
+            String(
+              item.status ||
+              "Available"
+            ).toLowerCase() ===
+            "available"
+          );
+        })
+        .map(function(item) {
+          return Number(
+            item.square
+          );
+        })
     );
 
   Array
-    .from(
-      selectedSquares
-    )
-    .forEach(
-      function(number) {
+    .from(selectedSquares)
+    .forEach(function(number) {
 
-        if (
-          !available.has(
-            number
-          )
-        ) {
-          selectedSquares.delete(
-            number
-          );
-        }
+      if (!available.has(number)) {
+        selectedSquares.delete(
+          number
+        );
       }
-    );
+
+    });
 }
 
 
@@ -747,98 +741,78 @@ function displayBoard() {
       "board"
     );
 
-  board.innerHTML =
-    "";
+  board.innerHTML = "";
 
   currentSquares
     .slice()
-    .sort(
-      function(a, b) {
+    .sort(function(a, b) {
+      return (
+        Number(a.square) -
+        Number(b.square)
+      );
+    })
+    .forEach(function(item) {
 
-        return (
-          Number(a.square) -
-          Number(b.square)
+      const number =
+        Number(item.square);
+
+      const status =
+        String(
+          item.status ||
+          "Available"
+        ).toLowerCase();
+
+      const button =
+        document.createElement(
+          "button"
         );
-      }
-    )
-    .forEach(
-      function(item) {
 
-        const number =
-          Number(
-            item.square
-          );
+      button.type = "button";
 
-        const status =
-          String(
-            item.status ||
-            "Available"
-          ).toLowerCase();
+      button.classList.add(
+        "square"
+      );
 
-        const button =
-          document.createElement(
-            "button"
-          );
-
-        button.type =
-          "button";
+      if (
+        status === "available" &&
+        selectedSquares.has(number)
+      ) {
 
         button.classList.add(
-          "square"
+          "selected"
         );
 
-        if (
-          status ===
-            "available" &&
-          selectedSquares.has(
-            number
-          )
-        ) {
+      } else {
 
-          button.classList.add(
-            "selected"
-          );
-
-        } else {
-
-          button.classList.add(
-            status
-          );
-        }
-
-        button.textContent =
-          number;
-
-        button.title =
-          "Square " +
-          number +
-          ": " +
-          item.status;
-
-        if (
-          status ===
-          "available"
-        ) {
-
-          button.onclick =
-            function() {
-
-              toggleSquare(
-                number
-              );
-            };
-
-        } else {
-
-          button.disabled =
-            true;
-        }
-
-        board.appendChild(
-          button
+        button.classList.add(
+          status
         );
       }
-    );
+
+      button.textContent =
+        number;
+
+      if (
+        status === "available"
+      ) {
+
+        button.onclick =
+          function() {
+            toggleSquare(
+              number
+            );
+          };
+
+      } else {
+
+        button.disabled = true;
+      }
+
+      board.appendChild(
+        button
+      );
+
+    });
 
   updateSelectionSummary();
 }
@@ -878,15 +852,10 @@ function clearSelections() {
 function getSelectedSquares() {
 
   return Array
-    .from(
-      selectedSquares
-    )
-    .sort(
-      function(a, b) {
-
-        return a - b;
-      }
-    );
+    .from(selectedSquares)
+    .sort(function(a, b) {
+      return a - b;
+    });
 }
 
 
@@ -917,8 +886,7 @@ function updateSelectionSummary() {
     summary.textContent =
       "No squares selected";
 
-    button.disabled =
-      true;
+    button.disabled = true;
 
     button.textContent =
       "Select Squares";
@@ -943,8 +911,7 @@ function updateSelectionSummary() {
     " selected — Total: $" +
     total;
 
-  button.disabled =
-    false;
+  button.disabled = false;
 
   button.textContent =
     "Reserve " +
@@ -965,7 +932,7 @@ function updateSelectionSummary() {
 
 /*
 =====================================================
-RESERVATION MODAL
+RESERVATION
 =====================================================
 */
 
@@ -974,9 +941,7 @@ function openReservationModal() {
   const squares =
     getSelectedSquares();
 
-  if (
-    !squares.length
-  ) {
+  if (!squares.length) {
     return;
   }
 
@@ -994,8 +959,7 @@ function openReservationModal() {
 
   document.getElementById(
     "reservationMessage"
-  ).textContent =
-    "";
+  ).textContent = "";
 
   document.getElementById(
     "reservationModal"
@@ -1013,12 +977,6 @@ function closeReservationModal() {
 }
 
 
-/*
-=====================================================
-PAYMENT MODAL
-=====================================================
-*/
-
 function closePaymentModal() {
 
   document.getElementById(
@@ -1026,20 +984,9 @@ function closePaymentModal() {
   ).style.display =
     "none";
 
-  document.getElementById(
-    "paymentStatus"
-  ).textContent =
-    "";
-
   loadBoard();
 }
 
-
-/*
-=====================================================
-RESERVE SQUARES
-=====================================================
-*/
 
 document
   .getElementById(
@@ -1047,7 +994,6 @@ document
   )
   .addEventListener(
     "submit",
-
     async function(event) {
 
       event.preventDefault();
@@ -1065,33 +1011,18 @@ document
       const squares =
         getSelectedSquares();
 
-      if (
-        !squares.length
-      ) {
-
-        message.textContent =
-          "Please select at least one square.";
-
-        return;
-      }
-
-      button.disabled =
-        true;
+      button.disabled = true;
 
       button.textContent =
         "Reserving...";
-
-      message.textContent =
-        "";
 
       try {
 
         const response =
           await fetch(
-            "/api/regular-1",
+            API_URL,
             {
-              method:
-                "POST",
+              method: "POST",
 
               headers: {
                 "Content-Type":
@@ -1144,10 +1075,9 @@ document
           !response.ok ||
           !result.success
         ) {
-
           throw new Error(
             result.message ||
-            "The reservation could not be completed."
+            "Reservation failed."
           );
         }
 
@@ -1180,8 +1110,7 @@ document
 
         document.getElementById(
           "paymentStatus"
-        ).textContent =
-          "";
+        ).textContent = "";
 
         document.getElementById(
           "paymentModal"
@@ -1202,8 +1131,7 @@ document
 
       } finally {
 
-        button.disabled =
-          false;
+        button.disabled = false;
 
         button.textContent =
           "Continue to Payment";
@@ -1222,35 +1150,14 @@ async function choosePaymentMethod(
   method
 ) {
 
-  if (
-    !currentReservation
-  ) {
-
-    document.getElementById(
-      "paymentStatus"
-    ).textContent =
-      "Reservation information could not be found.";
-
+  if (!currentReservation) {
     return;
   }
 
-  const paymentLinks = {
-
-    zeffy:
-      "https://www.zeffy.com/en-US/ticketing/buffalo-bills-regular-season-2026-akron-rescue-cats",
-
-    venmo:
-      "https://account.venmo.com/u/akronrescuecats"
-  };
-
   const paymentUrl =
-    paymentLinks[
-      method
-    ];
+    PAYMENT_LINKS[method];
 
-  if (
-    !paymentUrl
-  ) {
+  if (!paymentUrl) {
     return;
   }
 
@@ -1272,10 +1179,9 @@ async function choosePaymentMethod(
 
     const response =
       await fetch(
-        "/api/regular-1",
+        API_URL,
         {
-          method:
-            "POST",
+          method: "POST",
 
           headers: {
             "Content-Type":
@@ -1310,19 +1216,13 @@ async function choosePaymentMethod(
       !response.ok ||
       !result.success
     ) {
-
       throw new Error(
         result.message ||
-        "The payment method could not be saved."
+        "Payment method could not be saved."
       );
     }
 
-    paymentStatus.textContent =
-      "Opening payment page...";
-
-    if (
-      paymentWindow
-    ) {
+    if (paymentWindow) {
 
       paymentWindow.location.href =
         paymentUrl;
@@ -1335,9 +1235,7 @@ async function choosePaymentMethod(
 
   } catch (error) {
 
-    if (
-      paymentWindow
-    ) {
+    if (paymentWindow) {
       paymentWindow.close();
     }
 
@@ -1361,18 +1259,11 @@ function renderPayPalButton() {
       "paypal-button-container"
     );
 
-  container.innerHTML =
-    "";
+  container.innerHTML = "";
 
   if (
     !currentReservation
   ) {
-
-    document.getElementById(
-      "paymentStatus"
-    ).textContent =
-      "Reservation information could not be found.";
-
     return;
   }
 
@@ -1384,7 +1275,7 @@ function renderPayPalButton() {
     document.getElementById(
       "paymentStatus"
     ).textContent =
-      "PayPal could not load. Please refresh and try again.";
+      "PayPal could not load.";
 
     return;
   }
@@ -1392,112 +1283,66 @@ function renderPayPalButton() {
   paypal.Buttons({
 
     style: {
-      layout:
-        "vertical",
-
-      shape:
-        "rect",
-
-      label:
-        "paypal",
-
-      height:
-        45
+      layout: "vertical",
+      shape: "rect",
+      label: "paypal",
+      height: 45
     },
 
 
-    /*
-    =====================================================
-    CREATE ORDER ON SERVER
-    =====================================================
-    */
-
     createOrder:
-  async function() {
+      async function() {
 
-    const paymentStatus =
-      document.getElementById(
-        "paymentStatus"
-      );
+        const response =
+          await fetch(
+            API_URL,
+            {
+              method: "POST",
 
-    paymentStatus.textContent =
-      "Starting PayPal checkout...";
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
 
-    try {
+              body:
+                JSON.stringify({
 
-      const response =
-        await fetch(
-          "/api/regular-1",
-          {
-            method: "POST",
+                  action:
+                    "createPayPalOrder",
 
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
+                  data: {
 
-            body:
-              JSON.stringify({
-                action:
-                  "createPayPalOrder",
+                    squares:
+                      currentReservation.squares,
 
-                data: {
-                  squares:
-                    currentReservation.squares,
+                    email:
+                      currentReservation.email,
 
-                  email:
-                    currentReservation.email,
-
-                  reservationId:
-                    currentReservation.reservationId
-                }
-              })
-          }
-        );
-
-      const result =
-        await response.json();
-
-      if (
-        !response.ok ||
-        !result.success ||
-        !result.orderId
-      ) {
-        paymentStatus.textContent =
-          "PayPal error: " +
-          (
-            result.message ||
-            "Checkout could not be started."
+                    reservationId:
+                      currentReservation.reservationId
+                  }
+                })
+            }
           );
 
-        throw new Error(
-          result.message ||
-          "PayPal checkout could not be started."
-        );
-      }
+        const result =
+          await response.json();
 
-      paymentStatus.textContent =
-        "";
+        if (
+          !response.ok ||
+          !result.success ||
+          !result.orderId
+        ) {
 
-      return result.orderId;
+          throw new Error(
+            result.message ||
+            "PayPal checkout could not be started."
+          );
+        }
 
-    } catch (error) {
+        return result.orderId;
+      },
 
-      paymentStatus.textContent =
-        "PayPal error: " +
-        (
-          error.message ||
-          String(error)
-        );
-
-      throw error;
-    }
-  },
-    /*
-    =====================================================
-    SERVER CAPTURES PAYMENT AFTER APPROVAL
-    =====================================================
-    */
 
     onApprove:
       async function(data) {
@@ -1514,10 +1359,9 @@ function renderPayPalButton() {
 
           const response =
             await fetch(
-              "/api/regular-1",
+              API_URL,
               {
-                method:
-                  "POST",
+                method: "POST",
 
                 headers: {
                   "Content-Type":
@@ -1558,7 +1402,7 @@ function renderPayPalButton() {
 
             throw new Error(
               result.message ||
-              "The PayPal payment could not be confirmed."
+              "PayPal payment could not be confirmed."
             );
           }
 
@@ -1594,38 +1438,18 @@ function renderPayPalButton() {
       },
 
 
-  onError:
-  function(error) {
+    onError:
+      function(error) {
 
-    console.error(
-      "PayPal SDK error:",
-      error
-    );
-
-    const paymentStatus =
-      document.getElementById(
-        "paymentStatus"
-      );
-
-    /*
-      Do not overwrite the detailed error
-      already returned by our server.
-    */
-    if (
-      !paymentStatus.textContent ||
-      !paymentStatus.textContent.startsWith(
-        "PayPal error:"
-      )
-    ) {
-      paymentStatus.textContent =
-        "PayPal error: " +
-        (
-          error?.message ||
-          String(error) ||
-          "PayPal checkout failed."
+        console.error(
+          error
         );
-    }
-  }
+
+        document.getElementById(
+          "paymentStatus"
+        ).textContent =
+          "PayPal could not complete the payment. Please try again.";
+      }
 
   }).render(
     "#paypal-button-container"
@@ -1635,13 +1459,12 @@ function renderPayPalButton() {
 
 /*
 =====================================================
-CLICK OUTSIDE MODALS
+CLOSE MODALS BY CLICKING BACKGROUND
 =====================================================
 */
 
 window.addEventListener(
   "click",
-
   function(event) {
 
     const reservationModal =
@@ -1658,7 +1481,6 @@ window.addEventListener(
       event.target ===
       reservationModal
     ) {
-
       closeReservationModal();
     }
 
@@ -1666,7 +1488,6 @@ window.addEventListener(
       event.target ===
       paymentModal
     ) {
-
       closePaymentModal();
     }
   }
