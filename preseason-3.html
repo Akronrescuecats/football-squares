@@ -361,7 +361,7 @@
   <div class="price-line">
     $10 per square
   </div>
-
+<div id="payouts" class="price-line"></div>
   <p class="instructions">
     Tap every green square you would like.
     Selected squares turn blue.
@@ -659,7 +659,24 @@ async function loadBoard() {
       )
         ? data.squares
         : [];
+if (data.settings) {
 
+  const payouts =
+    data.settings.payouts || {};
+
+  document.getElementById(
+    "payouts"
+  ).textContent =
+    "Payouts — " +
+    "1st Quarter: $" +
+    Number(payouts.q1 || 0).toFixed(0) +
+    " • Halftime: $" +
+    Number(payouts.halftime || 0).toFixed(0) +
+    " • 3rd Quarter: $" +
+    Number(payouts.q3 || 0).toFixed(0) +
+    " • Final: $" +
+    Number(payouts.final || 0).toFixed(0);
+}
     cleanSelections();
 
     displayBoard();
