@@ -3,12 +3,40 @@ import crypto from "crypto";
 const SHEET_NAME = "Squares";
 const SETTINGS_SHEET_NAME = "Settings";
 
-const PRESEASON_2_GAME_NAMES = [
-  "preseason 2",
-  "pre season 2",
-  "preseason game 2",
-  "pre season game 2"
-];
+
+/*
+=====================================================
+BOARD DEFINITIONS
+=====================================================
+*/
+
+const BOARDS = {
+
+  preseason2: {
+    spreadsheetEnv:
+      "PRESEASON_2_SPREADSHEET_ID",
+
+    gameNames: [
+      "preseason 2",
+      "pre season 2",
+      "preseason game 2",
+      "pre season game 2"
+    ]
+  },
+
+  preseason3: {
+    spreadsheetEnv:
+      "PRESEASON_3_SPREADSHEET_ID",
+
+    gameNames: [
+      "preseason 3",
+      "pre season 3",
+      "preseason game 3",
+      "pre season game 3"
+    ]
+  }
+};
+
 
 /*
 =====================================================
@@ -27,8 +55,10 @@ function base64Url(input) {
 
 
 function getGoogleCredentials() {
+
   const raw =
-    process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    process.env
+      .GOOGLE_SERVICE_ACCOUNT_JSON;
 
   if (!raw) {
     throw new Error(
@@ -53,11 +83,14 @@ function getGoogleCredentials() {
 
 
 async function getGoogleAccessToken() {
+
   const credentials =
     getGoogleCredentials();
 
   const now =
-    Math.floor(Date.now() / 1000);
+    Math.floor(
+      Date.now() / 1000
+    );
 
   const header = {
     alg: "RS256",
@@ -119,7 +152,8 @@ async function getGoogleAccessToken() {
     await fetch(
       "https://oauth2.googleapis.com/token",
       {
-        method: "POST",
+        method:
+          "POST",
 
         headers: {
           "Content-Type":
@@ -156,18 +190,41 @@ async function getGoogleAccessToken() {
 
 /*
 =====================================================
-PRESEASON BOARD 2 SPREADSHEET
+HELPERS
 =====================================================
 */
 
-function getSpreadsheetId() {
+function cleanText(value) {
+
+  return String(
+    value ?? ""
+  ).trim();
+}
+
+
+function normalizeStatus(value) {
+
+  return cleanText(value)
+    .toLowerCase();
+}
+
+
+function getSpreadsheetId(
+  board
+) {
+
+  const environmentName =
+    board.spreadsheetEnv;
+
   const id =
-    process.env
-      .PRESEASON_2_SPREADSHEET_ID;
+    process.env[
+      environmentName
+    ];
 
   if (!id) {
     throw new Error(
-      "PRESEASON_2_SPREADSHEET_ID is missing."
+      environmentName +
+      " is missing."
     );
   }
 
@@ -175,17 +232,158 @@ function getSpreadsheetId() {
 }
 
 
+function findQuestionAnswer(
+  questions,
+  phrase
+) {
+
+  if (
+    !Array.isArray(
+      questions
+    )
+  ) {
+    return "";
+  }
+
+  const target =
+    phrase.toLowerCase();
+
+  const match =
+    questions.find(
+      function(item) {
+
+        return cleanText(
+          item?.question
+        )
+          .toLowerCase()
+          .includes(
+            target
+          );
+      }
+    );
+
+  return cleanText(
+    match?.answer
+  );
+}
+
+
+function parseSquares(value) {
+
+  const matches =
+    cleanText(value)
+      .match(/\d+/g) ||
+    [];
+
+  const squares =
+    Array.from(
+      new Set(
+        matches
+          .map(Number)
+          .filter(
+            function(number) {
+
+              return (
+                Number.isInteger(
+                  number
+                ) &&
+                number >= 1 &&
+                number <= 100
+              );
+            }
+          )
+      )
+    )
+      .sort(
+        function(a, b) {
+          return a - b;
+        }
+      );
+
+  if (!squares.length) {
+    throw new Error(
+      "No valid square numbers were found in the Zeffy payment."
+    );
+  }
+
+  return squares;
+}
+
+
+function normalizeGameName(
+  value
+) {
+
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+
+function findBoard(
+  gameAnswer
+) {
+
+  const normalized =
+    normalizeGameName(
+      gameAnswer
+    );
+
+  const entries =
+    Object.entries(
+      BOARDS
+    );
+
+  for (
+    const [
+      boardKey,
+      board
+    ]
+    of entries
+  ) {
+
+    if (
+      board.gameNames
+        .some(
+          function(name) {
+
+            return (
+              normalized ===
+              name
+            );
+          }
+        )
+    ) {
+
+      return {
+        key:
+          boardKey,
+
+        config:
+          board
+      };
+    }
+  }
+
+  return null;
+}
+
+
 /*
 =====================================================
-READ PRICE FROM SETTINGS
+READ SETTINGS
 =====================================================
 */
 
 async function getPricePerSquare(
-  token
+  token,
+  board
 ) {
+
   const spreadsheetId =
-    getSpreadsheetId();
+    getSpreadsheetId(
+      board
+    );
 
   const range =
     encodeURIComponent(
@@ -248,10 +446,14 @@ READ SQUARES
 */
 
 async function getAllRows(
-  token
+  token,
+  board
 ) {
+
   const spreadsheetId =
-    getSpreadsheetId();
+    getSpreadsheetId(
+      board
+    );
 
   const range =
     encodeURIComponent(
@@ -299,6 +501,7 @@ async function getAllRows(
     index < 100;
     index++
   ) {
+
     const source =
       sourceRows[index] || [];
 
@@ -326,20 +529,24 @@ async function getAllRows(
 
 /*
 =====================================================
-UPDATE SHEET
+UPDATE SQUARES
 =====================================================
 */
 
 async function batchUpdateRows(
   token,
+  board,
   updates
 ) {
+
   if (!updates.length) {
     return;
   }
 
   const spreadsheetId =
-    getSpreadsheetId();
+    getSpreadsheetId(
+      board
+    );
 
   const url =
     "https://sheets.googleapis.com/v4/spreadsheets/" +
@@ -387,121 +594,15 @@ async function batchUpdateRows(
 
 /*
 =====================================================
-HELPERS
+PROCESS ZEFFY PAYMENT
 =====================================================
 */
 
-function cleanText(value) {
-  return String(
-    value ?? ""
-  ).trim();
-}
-
-
-function normalizeStatus(value) {
-  return cleanText(value)
-    .toLowerCase();
-}
-
-
-function findQuestionAnswer(
-  questions,
-  phrase
+async function processPayment(
+  payment,
+  board
 ) {
-  if (
-    !Array.isArray(questions)
-  ) {
-    return "";
-  }
 
-  const target =
-    phrase.toLowerCase();
-
-  const match =
-    questions.find(
-      function(item) {
-
-        return cleanText(
-          item?.question
-        )
-          .toLowerCase()
-          .includes(
-            target
-          );
-      }
-    );
-
-  return cleanText(
-    match?.answer
-  );
-}
-
-
-function parseSquares(value) {
-  const matches =
-    cleanText(value)
-      .match(/\d+/g) ||
-    [];
-
-  const squares =
-    Array.from(
-      new Set(
-        matches
-          .map(Number)
-          .filter(
-            function(number) {
-              return (
-                Number.isInteger(number) &&
-                number >= 1 &&
-                number <= 100
-              );
-            }
-          )
-      )
-    )
-      .sort(
-        function(a, b) {
-          return a - b;
-        }
-      );
-
-  if (!squares.length) {
-    throw new Error(
-      "No valid square numbers were found in the Zeffy payment."
-    );
-  }
-
-  return squares;
-}
-
-
-function isPreseason2(value) {
-  const normalized =
-    cleanText(value)
-      .toLowerCase()
-      .replace(/\s+/g, " ");
-
-  return PRESEASON_2_GAME_NAMES
-    .some(
-      function(name) {
-        return (
-          normalized ===
-          name
-        );
-      }
-    );
-}
-
-
-/*
-=====================================================
-PROCESS PRESEASON BOARD 2 PAYMENT
-=====================================================
-*/
-
-async function processPreseason2Payment(
-  payment
-) {
   const googleToken =
     await getGoogleAccessToken();
 
@@ -530,26 +631,24 @@ async function processPreseason2Payment(
       payment?.amount
     );
 
-  const questions =
-    payment?.buyer_questions;
-
   const squareAnswer =
     findQuestionAnswer(
-      questions,
+      payment?.buyer_questions,
       "square number"
     );
 
-  const gameAnswer =
-    findQuestionAnswer(
-      questions,
-      "which game"
+  const squares =
+    parseSquares(
+      squareAnswer
     );
+
 
   if (!paymentId) {
     throw new Error(
       "Zeffy payment ID is missing."
     );
   }
+
 
   if (
     paymentStatus !==
@@ -560,6 +659,7 @@ async function processPreseason2Payment(
     );
   }
 
+
   if (
     currency !==
     "usd"
@@ -569,31 +669,20 @@ async function processPreseason2Payment(
     );
   }
 
+
   if (!buyerEmail) {
     throw new Error(
       "The Zeffy buyer email is missing."
     );
   }
 
-  if (
-    !isPreseason2(
-      gameAnswer
-    )
-  ) {
-    throw new Error(
-      "This payment is not for Preseason Board 2."
-    );
-  }
-
-  const squares =
-    parseSquares(
-      squareAnswer
-    );
 
   const pricePerSquare =
     await getPricePerSquare(
-      googleToken
+      googleToken,
+      board
     );
+
 
   const expectedCents =
     Math.round(
@@ -602,28 +691,33 @@ async function processPreseason2Payment(
       100
     );
 
+
   if (
     amountCents !==
     expectedCents
   ) {
+
     throw new Error(
       "Zeffy payment amount does not match the selected squares."
     );
   }
 
+
   const rows =
     await getAllRows(
-      googleToken
+      googleToken,
+      board
     );
 
 
   /*
-  Prevent duplicate processing.
+  Duplicate protection.
   */
 
   const alreadyRecorded =
     rows.some(
       function(row) {
+
         return (
           cleanText(
             row[8]
@@ -633,9 +727,11 @@ async function processPreseason2Payment(
       }
     );
 
+
   if (
     alreadyRecorded
   ) {
+
     return {
       success:
         true,
@@ -653,8 +749,7 @@ async function processPreseason2Payment(
 
 
   /*
-  Verify every square is still Pending
-  for the same email.
+  Verify pending reservation.
   */
 
   squares.forEach(
@@ -675,10 +770,12 @@ async function processPreseason2Payment(
           row[3]
         ).toLowerCase();
 
+
       if (
         status !==
         "pending"
       ) {
+
         throw new Error(
           "Square " +
           squareNumber +
@@ -686,10 +783,12 @@ async function processPreseason2Payment(
         );
       }
 
+
       if (
         reservedEmail !==
         buyerEmail
       ) {
+
         throw new Error(
           "Square " +
           squareNumber +
@@ -701,7 +800,7 @@ async function processPreseason2Payment(
 
 
   /*
-  Mark all paid squares Sold.
+  Mark Sold + Zeffy + Paid.
   */
 
   const paymentDate =
@@ -709,6 +808,7 @@ async function processPreseason2Payment(
       .toISOString();
 
   const updates = [];
+
 
   squares.forEach(
     function(squareNumber) {
@@ -721,7 +821,9 @@ async function processPreseason2Payment(
       const sheetRow =
         squareNumber + 1;
 
+
       updates.push({
+
         range:
           `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
 
@@ -754,10 +856,13 @@ async function processPreseason2Payment(
     }
   );
 
+
   await batchUpdateRows(
     googleToken,
+    board,
     updates
   );
+
 
   return {
     success:
@@ -778,13 +883,14 @@ async function processPreseason2Payment(
 
 /*
 =====================================================
-WEBHOOK
+ZEFFY WEBHOOK
 =====================================================
 */
 
 export default {
 
   async fetch(request) {
+
 
     /*
     Browser health check.
@@ -794,6 +900,7 @@ export default {
       request.method !==
       "POST"
     ) {
+
       return Response.json(
         {
           success:
@@ -815,6 +922,7 @@ export default {
       const body =
         await request.json();
 
+
       console.log(
         "ZEFFY WEBHOOK RECEIVED:",
         JSON.stringify(
@@ -824,7 +932,8 @@ export default {
 
 
       /*
-      Only completed payments.
+      Ignore anything except
+      completed payments.
       */
 
       if (
@@ -856,7 +965,9 @@ export default {
       const payment =
         body?.data;
 
+
       if (!payment) {
+
         throw new Error(
           "Zeffy payment data is missing."
         );
@@ -865,28 +976,29 @@ export default {
 
       const gameAnswer =
         findQuestionAnswer(
-          payment
-            ?.buyer_questions,
-
+          payment?.buyer_questions,
           "which game"
         );
 
 
+      const matchedBoard =
+        findBoard(
+          gameAnswer
+        );
+
+
       /*
-      For now this webhook only automates
-      PRESEASON BOARD 2.
+      Ignore boards we have not
+      connected yet.
       */
 
-      if (
-        !isPreseason2(
-          gameAnswer
-        )
-      ) {
+      if (!matchedBoard) {
 
         console.log(
           "ZEFFY PAYMENT IGNORED - GAME:",
           gameAnswer
         );
+
 
         return Response.json(
           {
@@ -908,13 +1020,15 @@ export default {
 
 
       const result =
-        await processPreseason2Payment(
-          payment
+        await processPayment(
+          payment,
+          matchedBoard.config
         );
 
 
       console.log(
         "ZEFFY PAYMENT PROCESSED:",
+        matchedBoard.key,
         JSON.stringify(
           result
         )
@@ -937,11 +1051,6 @@ export default {
         error
       );
 
-
-      /*
-      Return an error so we can clearly see
-      failed payment matching in Vercel.
-      */
 
       return Response.json(
         {
