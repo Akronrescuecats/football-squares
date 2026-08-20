@@ -11,7 +11,19 @@ BOARD DEFINITIONS
 */
 
 const BOARDS = {
+  
+  preseason1: {
+    spreadsheetEnv:
+      "PRESEASON_SPREADSHEET_ID",
 
+    gameNames: [
+      "preseason 1",
+      "pre season 1",
+      "preseason game 1",
+      "pre season game 1"
+    ]
+  },
+  
   preseason2: {
     spreadsheetEnv:
       "PRESEASON_2_SPREADSHEET_ID",
