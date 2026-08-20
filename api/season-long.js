@@ -1106,11 +1106,6 @@ function verifyCompletedPayPalOrder(
   units.forEach(
     function(unit) {
 
-      /*
-      PayPal may return custom_id
-      on the purchase unit.
-      */
-
       if (
         String(
           unit.custom_id || ""
@@ -1142,8 +1137,9 @@ function verifyCompletedPayPalOrder(
           }
 
           /*
-          PayPal may also return custom_id
-          on the completed capture itself.
+          PayPal may return the custom_id
+          on the capture instead of the
+          purchase unit.
           */
 
           if (
@@ -1155,14 +1151,11 @@ function verifyCompletedPayPalOrder(
             reservationMatches = true;
           }
 
-          const currency =
+          if (
             String(
               capture?.amount?.currency_code ||
               ""
-            ).toUpperCase();
-
-          if (
-            currency !==
+            ).toUpperCase() !==
             CURRENCY_CODE
           ) {
             throw new Error(
@@ -1180,25 +1173,13 @@ function verifyCompletedPayPalOrder(
     }
   );
 
-  if (!reservationMatches) {
+  if (
+    !reservationMatches
+  ) {
     throw new Error(
       "The PayPal payment does not match this reservation."
     );
   }
-
-  if (
-    Math.round(
-      paidTotal * 100
-    ) !==
-    Math.round(
-      expectedTotal * 100
-    )
-  ) {
-    throw new Error(
-      "The PayPal payment amount does not match the reservation."
-    );
-  }
-}
 
   if (
     Math.round(
