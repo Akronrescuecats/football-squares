@@ -1,9 +1,8 @@
-import crypto from "crypto";
+const crypto = require("crypto");
 
 const SHEET_NAME = "Squares";
 const SETTINGS_SHEET_NAME = "Settings";
 const CURRENCY_CODE = "USD";
-
 
 /*
 =====================================================
@@ -19,7 +18,6 @@ function base64Url(input) {
     .replace(/\+/g, "-")
     .replace(/\//g, "_");
 }
-
 
 function getGoogleCredentials() {
   const raw =
@@ -53,7 +51,6 @@ function getGoogleCredentials() {
 
   return credentials;
 }
-
 
 async function getAccessToken() {
   const credentials =
@@ -97,7 +94,6 @@ async function getAccessToken() {
     crypto.createPrivateKey({
       key:
         credentials.private_key,
-
       format:
         "pem"
     });
@@ -120,8 +116,7 @@ async function getAccessToken() {
     await fetch(
       "https://oauth2.googleapis.com/token",
       {
-        method:
-          "POST",
+        method: "POST",
 
         headers: {
           "Content-Type":
@@ -155,7 +150,6 @@ async function getAccessToken() {
   return data.access_token;
 }
 
-
 /*
 =====================================================
 SPREADSHEET
@@ -164,8 +158,7 @@ SPREADSHEET
 
 function getSpreadsheetId() {
   const id =
-    process.env
-      .SEASON_LONG_SPREADSHEET_ID;
+    process.env.SEASON_LONG_SPREADSHEET_ID;
 
   if (!id) {
     throw new Error(
@@ -176,18 +169,9 @@ function getSpreadsheetId() {
   return id;
 }
 
-
 /*
 =====================================================
 SETTINGS
-
-B2 = Price Per Square
-B3 = Board Title
-B4 = Hold Minutes
-B5 = 1st Quarter Payout
-B6 = Halftime Payout
-B7 = 3rd Quarter Payout
-B8 = Final Payout
 =====================================================
 */
 
@@ -233,17 +217,13 @@ async function getSettings(token) {
   const values =
     data.values || [];
 
-  function getValue(index) {
-    return (
-      values[index]?.[0] ??
-      ""
-    );
-  }
+  const getValue =
+    function(index) {
+      return values[index]?.[0] ?? "";
+    };
 
   const pricePerSquare =
-    Number(
-      getValue(0)
-    );
+    Number(getValue(0));
 
   const boardTitle =
     String(
@@ -252,34 +232,22 @@ async function getSettings(token) {
     ).trim();
 
   const holdMinutes =
-    Number(
-      getValue(2)
-    );
+    Number(getValue(2));
 
   const q1 =
-    Number(
-      getValue(3)
-    );
+    Number(getValue(3));
 
   const halftime =
-    Number(
-      getValue(4)
-    );
+    Number(getValue(4));
 
   const q3 =
-    Number(
-      getValue(5)
-    );
+    Number(getValue(5));
 
   const final =
-    Number(
-      getValue(6)
-    );
+    Number(getValue(6));
 
   if (
-    !Number.isFinite(
-      pricePerSquare
-    ) ||
+    !Number.isFinite(pricePerSquare) ||
     pricePerSquare <= 0
   ) {
     throw new Error(
@@ -288,9 +256,7 @@ async function getSettings(token) {
   }
 
   if (
-    !Number.isFinite(
-      holdMinutes
-    ) ||
+    !Number.isFinite(holdMinutes) ||
     holdMinutes <= 0
   ) {
     throw new Error(
@@ -300,9 +266,7 @@ async function getSettings(token) {
 
   return {
     pricePerSquare,
-
     boardTitle,
-
     holdMinutes,
 
     payouts: {
@@ -328,7 +292,6 @@ async function getSettings(token) {
     }
   };
 }
-
 
 /*
 =====================================================
@@ -411,10 +374,9 @@ async function getAllRows(token) {
   return rows;
 }
 
-
 /*
 =====================================================
-UPDATE SQUARES
+UPDATE SHEET
 =====================================================
 */
 
@@ -441,8 +403,7 @@ async function batchUpdateRows(
     await fetch(
       url,
       {
-        method:
-          "POST",
+        method: "POST",
 
         headers: {
           Authorization:
@@ -463,19 +424,18 @@ async function batchUpdateRows(
       }
     );
 
-  const result =
+  const data =
     await response.json();
 
   if (!response.ok) {
     throw new Error(
-      result?.error?.message ||
+      data?.error?.message ||
       "Could not update the football squares sheet."
     );
   }
 
-  return result;
+  return data;
 }
-
 
 /*
 =====================================================
@@ -485,34 +445,23 @@ HELPERS
 
 function normalizeStatus(value) {
   const status =
-    String(
-      value || ""
-    )
+    String(value || "")
       .trim()
       .toLowerCase();
 
-  if (
-    status ===
-    "sold"
-  ) {
+  if (status === "sold") {
     return "Sold";
   }
 
-  if (
-    status ===
-    "pending"
-  ) {
+  if (status === "pending") {
     return "Pending";
   }
 
   return "Available";
 }
 
-
 function normalizeSquareList(values) {
-  if (
-    !Array.isArray(values)
-  ) {
+  if (!Array.isArray(values)) {
     throw new Error(
       "Please select at least one square."
     );
@@ -543,9 +492,7 @@ function normalizeSquareList(values) {
         }
       );
 
-  if (
-    squares.length === 0
-  ) {
+  if (!squares.length) {
     throw new Error(
       "Please select at least one square."
     );
@@ -553,7 +500,6 @@ function normalizeSquareList(values) {
 
   return squares;
 }
-
 
 function rowsToPublicSquares(rows) {
   return rows.map(
@@ -579,10 +525,9 @@ function rowsToPublicSquares(rows) {
   );
 }
 
-
 /*
 =====================================================
-RELEASE EXPIRED RESERVATIONS
+RELEASE EXPIRED HOLDS
 =====================================================
 */
 
@@ -602,16 +547,13 @@ async function releaseExpiredReservations(
       if (
         normalizeStatus(
           row[1]
-        ) !==
-        "Pending"
+        ) !== "Pending"
       ) {
         return;
       }
 
       const reservedAt =
-        new Date(
-          row[5]
-        );
+        new Date(row[5]);
 
       if (
         Number.isNaN(
@@ -625,8 +567,7 @@ async function releaseExpiredReservations(
         (
           now -
           reservedAt.getTime()
-        ) /
-        60000;
+        ) / 60000;
 
       if (
         minutesPassed <
@@ -663,10 +604,7 @@ async function releaseExpiredReservations(
     token,
     updates
   );
-
-  return updates.length;
 }
-
 
 /*
 =====================================================
@@ -678,16 +616,14 @@ async function reserveSquares(
   token,
   formData
 ) {
+  const settings =
+    await getSettings(token);
+
   if (!formData) {
     throw new Error(
       "Reservation information is missing."
     );
   }
-
-  const settings =
-    await getSettings(
-      token
-    );
 
   const squares =
     normalizeSquareList(
@@ -721,19 +657,8 @@ async function reserveSquares(
     );
   }
 
-  if (
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      .test(email)
-  ) {
-    throw new Error(
-      "Please enter a valid email address."
-    );
-  }
-
   let rows =
-    await getAllRows(
-      token
-    );
+    await getAllRows(token);
 
   await releaseExpiredReservations(
     token,
@@ -742,23 +667,19 @@ async function reserveSquares(
   );
 
   rows =
-    await getAllRows(
-      token
-    );
+    await getAllRows(token);
 
-  const unavailable = [];
+  const unavailable =
+    [];
 
   squares.forEach(
     function(squareNumber) {
 
-      const row =
-        rows[
-          squareNumber - 1
-        ];
-
       if (
         normalizeStatus(
-          row[1]
+          rows[
+            squareNumber - 1
+          ][1]
         ) !==
         "Available"
       ) {
@@ -769,13 +690,10 @@ async function reserveSquares(
     }
   );
 
-  if (
-    unavailable.length > 0
-  ) {
+  if (unavailable.length) {
     throw new Error(
       "These squares are no longer available: " +
-      unavailable.join(", ") +
-      ". Please choose again."
+      unavailable.join(", ")
     );
   }
 
@@ -821,15 +739,10 @@ async function reserveSquares(
   );
 
   return {
-    success:
-      true,
-
+    success: true,
     squares,
-
     name,
-
     email,
-
     phone,
 
     quantity:
@@ -846,11 +759,9 @@ async function reserveSquares(
       settings.holdMinutes,
 
     reservationId,
-
     settings
   };
 }
-
 
 /*
 =====================================================
@@ -860,12 +771,10 @@ PAYPAL AUTH
 
 async function getPayPalAccessToken() {
   const clientId =
-    process.env
-      .PAYPAL_CLIENT_ID;
+    process.env.PAYPAL_CLIENT_ID;
 
   const clientSecret =
-    process.env
-      .PAYPAL_CLIENT_SECRET;
+    process.env.PAYPAL_CLIENT_SECRET;
 
   if (
     !clientId ||
@@ -924,10 +833,7 @@ async function getPayPalAccessToken() {
   return data.access_token;
 }
 
-
-async function getPayPalOrder(
-  orderId
-) {
+async function getPayPalOrder(orderId) {
   const accessToken =
     await getPayPalAccessToken();
 
@@ -938,16 +844,10 @@ async function getPayPalOrder(
         orderId
       ),
       {
-        method:
-          "GET",
-
         headers: {
           Authorization:
             "Bearer " +
-            accessToken,
-
-          Accept:
-            "application/json"
+            accessToken
         },
 
         cache:
@@ -960,7 +860,6 @@ async function getPayPalOrder(
 
   if (!response.ok) {
     throw new Error(
-      data?.message ||
       "PayPal could not verify this order."
     );
   }
@@ -968,29 +867,20 @@ async function getPayPalOrder(
   return data;
 }
 
-
 function makePayPalRequestId(
   type,
   reservationId
 ) {
   return crypto
-    .createHash(
-      "sha256"
-    )
+    .createHash("sha256")
     .update(
       type +
       ":" +
       reservationId
     )
-    .digest(
-      "hex"
-    )
-    .slice(
-      0,
-      36
-    );
+    .digest("hex")
+    .slice(0, 36);
 }
-
 
 /*
 =====================================================
@@ -999,13 +889,11 @@ VALIDATE PAYPAL RESERVATION
 */
 
 async function validatePayPalReservation(
-  googleToken,
+  token,
   paymentData
 ) {
   const settings =
-    await getSettings(
-      googleToken
-    );
+    await getSettings(token);
 
   const email =
     String(
@@ -1024,30 +912,17 @@ async function validatePayPalReservation(
       paymentData?.squares
     );
 
-  if (
-    !email ||
-    !reservationId
-  ) {
-    throw new Error(
-      "PayPal reservation information is incomplete."
-    );
-  }
-
   let rows =
-    await getAllRows(
-      googleToken
-    );
+    await getAllRows(token);
 
   await releaseExpiredReservations(
-    googleToken,
+    token,
     rows,
     settings.holdMinutes
   );
 
   rows =
-    await getAllRows(
-      googleToken
-    );
+    await getAllRows(token);
 
   squares.forEach(
     function(squareNumber) {
@@ -1060,8 +935,7 @@ async function validatePayPalReservation(
       if (
         normalizeStatus(
           row[1]
-        ) !==
-        "Pending"
+        ) !== "Pending"
       ) {
         throw new Error(
           "Square " +
@@ -1070,15 +944,12 @@ async function validatePayPalReservation(
         );
       }
 
-      const reservedEmail =
+      if (
         String(
           row[3] || ""
         )
           .trim()
-          .toLowerCase();
-
-      if (
-        reservedEmail !==
+          .toLowerCase() !==
         email
       ) {
         throw new Error(
@@ -1086,13 +957,10 @@ async function validatePayPalReservation(
         );
       }
 
-      const savedReservationId =
+      if (
         String(
           row[11] || ""
-        ).trim();
-
-      if (
-        savedReservationId !==
+        ).trim() !==
         reservationId
       ) {
         throw new Error(
@@ -1104,13 +972,9 @@ async function validatePayPalReservation(
 
   return {
     rows,
-
     squares,
-
     email,
-
     reservationId,
-
     settings,
 
     total:
@@ -1119,7 +983,6 @@ async function validatePayPalReservation(
   };
 }
 
-
 /*
 =====================================================
 CREATE PAYPAL ORDER
@@ -1127,23 +990,17 @@ CREATE PAYPAL ORDER
 */
 
 async function createPayPalOrder(
-  googleToken,
+  token,
   paymentData
 ) {
   const reservation =
     await validatePayPalReservation(
-      googleToken,
+      token,
       paymentData
     );
 
   const accessToken =
     await getPayPalAccessToken();
-
-  const requestId =
-    makePayPalRequestId(
-      "create",
-      reservation.reservationId
-    );
 
   const response =
     await fetch(
@@ -1161,10 +1018,10 @@ async function createPayPalOrder(
             "application/json",
 
           "PayPal-Request-Id":
-            requestId,
-
-          Prefer:
-            "return=representation"
+            makePayPalRequestId(
+              "create",
+              reservation.reservationId
+            )
         },
 
         body:
@@ -1204,20 +1061,15 @@ async function createPayPalOrder(
   ) {
     throw new Error(
       data?.message ||
-      data?.details?.[0]?.description ||
       "PayPal could not create the order."
     );
   }
 
   return {
-    success:
-      true,
-
-    orderId:
-      data.id
+    success: true,
+    orderId: data.id
   };
 }
-
 
 /*
 =====================================================
@@ -1226,13 +1078,13 @@ VERIFY PAYPAL
 */
 
 function verifyCompletedPayPalOrder(
-  paypalOrder,
+  order,
   expectedTotal,
   reservationId
 ) {
   if (
     String(
-      paypalOrder?.status || ""
+      order?.status || ""
     ).toUpperCase() !==
     "COMPLETED"
   ) {
@@ -1241,18 +1093,18 @@ function verifyCompletedPayPalOrder(
     );
   }
 
-  const purchaseUnits =
-    Array.isArray(
-      paypalOrder.purchase_units
-    )
-      ? paypalOrder.purchase_units
-      : [];
-
   let paidTotal = 0;
   let reservationMatches =
     false;
 
-  purchaseUnits.forEach(
+  const units =
+    Array.isArray(
+      order.purchase_units
+    )
+      ? order.purchase_units
+      : [];
+
+  units.forEach(
     function(unit) {
 
       if (
@@ -1268,9 +1120,7 @@ function verifyCompletedPayPalOrder(
       const captures =
         unit?.payments?.captures;
 
-      if (
-        !Array.isArray(captures)
-      ) {
+      if (!Array.isArray(captures)) {
         return;
       }
 
@@ -1286,16 +1136,11 @@ function verifyCompletedPayPalOrder(
             return;
           }
 
-          const currency =
-            String(
-              capture
-                ?.amount
-                ?.currency_code ||
-              ""
-            ).toUpperCase();
-
           if (
-            currency !==
+            String(
+              capture?.amount?.currency_code ||
+              ""
+            ).toUpperCase() !==
             CURRENCY_CODE
           ) {
             throw new Error(
@@ -1305,9 +1150,7 @@ function verifyCompletedPayPalOrder(
 
           paidTotal +=
             Number(
-              capture
-                ?.amount
-                ?.value ||
+              capture?.amount?.value ||
               0
             );
         }
@@ -1315,9 +1158,7 @@ function verifyCompletedPayPalOrder(
     }
   );
 
-  if (
-    !reservationMatches
-  ) {
+  if (!reservationMatches) {
     throw new Error(
       "The PayPal payment does not match this reservation."
     );
@@ -1337,7 +1178,6 @@ function verifyCompletedPayPalOrder(
   }
 }
 
-
 /*
 =====================================================
 CAPTURE PAYPAL
@@ -1345,7 +1185,7 @@ CAPTURE PAYPAL
 */
 
 async function capturePayPalOrder(
-  googleToken,
+  token,
   paymentData
 ) {
   const orderId =
@@ -1359,58 +1199,14 @@ async function capturePayPalOrder(
     );
   }
 
-  const currentRows =
-    await getAllRows(
-      googleToken
-    );
-
-  const alreadyPaid =
-    currentRows.some(
-      function(row) {
-        return (
-          String(
-            row[8] || ""
-          ) ===
-            orderId &&
-
-          String(
-            row[7] || ""
-          )
-            .trim()
-            .toLowerCase() ===
-            "paid"
-        );
-      }
-    );
-
-  if (
-    alreadyPaid
-  ) {
-    return {
-      success:
-        true,
-
-      alreadyProcessed:
-        true,
-
-      orderId
-    };
-  }
-
   const reservation =
     await validatePayPalReservation(
-      googleToken,
+      token,
       paymentData
     );
 
   const accessToken =
     await getPayPalAccessToken();
-
-  const requestId =
-    makePayPalRequestId(
-      "capture",
-      reservation.reservationId
-    );
 
   const response =
     await fetch(
@@ -1432,10 +1228,10 @@ async function capturePayPalOrder(
             "application/json",
 
           "PayPal-Request-Id":
-            requestId,
-
-          Prefer:
-            "return=representation"
+            makePayPalRequestId(
+              "capture",
+              reservation.reservationId
+            )
         },
 
         body:
@@ -1443,39 +1239,18 @@ async function capturePayPalOrder(
       }
     );
 
-  const captureResult =
+  let order =
     await response.json();
 
-  let paypalOrder;
-
-  try {
-    paypalOrder =
+  if (!response.ok) {
+    order =
       await getPayPalOrder(
         orderId
       );
-  } catch (error) {
-    paypalOrder =
-      captureResult;
-  }
-
-  if (
-    !response.ok &&
-    String(
-      paypalOrder?.status || ""
-    ).toUpperCase() !==
-      "COMPLETED"
-  ) {
-    throw new Error(
-      captureResult?.message ||
-      captureResult
-        ?.details?.[0]
-        ?.description ||
-      "PayPal could not capture the payment."
-    );
   }
 
   verifyCompletedPayPalOrder(
-    paypalOrder,
+    order,
     reservation.total,
     reservation.reservationId
   );
@@ -1520,40 +1295,30 @@ async function capturePayPalOrder(
   );
 
   await batchUpdateRows(
-    googleToken,
+    token,
     updates
   );
 
   return {
-    success:
-      true,
-
+    success: true,
     orderId,
-
     squares:
       reservation.squares,
-
     amount:
       reservation.total
   };
 }
 
-
 /*
 =====================================================
-ZEFFY / VENMO
+ZEFFY / VENMO SELECTION
 =====================================================
 */
 
 async function savePaymentMethod(
-  googleToken,
+  token,
   paymentData
 ) {
-  const settings =
-    await getSettings(
-      googleToken
-    );
-
   const email =
     String(
       paymentData?.email || ""
@@ -1563,8 +1328,235 @@ async function savePaymentMethod(
 
   const method =
     String(
-      paymentData?.paymentMethod ||
-      ""
+      paymentData?.paymentMethod || ""
     )
       .trim()
       .toLowerCase();
+
+  const squares =
+    normalizeSquareList(
+      paymentData?.squares
+    );
+
+  if (
+    method !== "zeffy" &&
+    method !== "venmo"
+  ) {
+    throw new Error(
+      "That payment method is not valid."
+    );
+  }
+
+  const rows =
+    await getAllRows(token);
+
+  const updates = [];
+
+  squares.forEach(
+    function(squareNumber) {
+
+      const row =
+        rows[
+          squareNumber - 1
+        ];
+
+      if (
+        normalizeStatus(
+          row[1]
+        ) !== "Pending"
+      ) {
+        throw new Error(
+          "Square " +
+          squareNumber +
+          " is no longer pending."
+        );
+      }
+
+      if (
+        String(
+          row[3] || ""
+        )
+          .trim()
+          .toLowerCase() !==
+        email
+      ) {
+        throw new Error(
+          "The reservation email does not match."
+        );
+      }
+
+      const sheetRow =
+        squareNumber + 1;
+
+      updates.push({
+        range:
+          `${SHEET_NAME}!G${sheetRow}:H${sheetRow}`,
+
+        values: [[
+          method === "zeffy"
+            ? "Zeffy"
+            : "Venmo",
+
+          "Payment Pending"
+        ]]
+      });
+    }
+  );
+
+  await batchUpdateRows(
+    token,
+    updates
+  );
+
+  return {
+    success: true,
+    paymentMethod: method,
+    squares
+  };
+}
+
+/*
+=====================================================
+VERCEL HANDLER
+=====================================================
+*/
+
+module.exports =
+  async function handler(
+    request,
+    response
+  ) {
+
+    try {
+
+      const token =
+        await getAccessToken();
+
+      const settings =
+        await getSettings(token);
+
+      if (
+        request.method === "GET"
+      ) {
+
+        let rows =
+          await getAllRows(token);
+
+        await releaseExpiredReservations(
+          token,
+          rows,
+          settings.holdMinutes
+        );
+
+        rows =
+          await getAllRows(token);
+
+        return response
+          .status(200)
+          .json({
+            success: true,
+            settings,
+            squares:
+              rowsToPublicSquares(
+                rows
+              )
+          });
+      }
+
+      if (
+        request.method === "POST"
+      ) {
+
+        const body =
+          request.body || {};
+
+        if (
+          body.action ===
+          "reserveSquares"
+        ) {
+          return response
+            .status(200)
+            .json(
+              await reserveSquares(
+                token,
+                body.data
+              )
+            );
+        }
+
+        if (
+          body.action ===
+          "createPayPalOrder"
+        ) {
+          return response
+            .status(200)
+            .json(
+              await createPayPalOrder(
+                token,
+                body.data
+              )
+            );
+        }
+
+        if (
+          body.action ===
+          "capturePayPalOrder"
+        ) {
+          return response
+            .status(200)
+            .json(
+              await capturePayPalOrder(
+                token,
+                body.data
+              )
+            );
+        }
+
+        if (
+          body.action ===
+          "savePaymentMethod"
+        ) {
+          return response
+            .status(200)
+            .json(
+              await savePaymentMethod(
+                token,
+                body.data
+              )
+            );
+        }
+
+        return response
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "Invalid API action."
+          });
+      }
+
+      return response
+        .status(405)
+        .json({
+          success: false,
+          message:
+            "Method not allowed."
+        });
+
+    } catch (error) {
+
+      console.error(
+        "Season-Long API error:",
+        error
+      );
+
+      return response
+        .status(500)
+        .json({
+          success: false,
+          message:
+            error?.message ||
+            String(error)
+        });
+    }
+  };
