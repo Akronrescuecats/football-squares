@@ -154,11 +154,11 @@ SPREADSHEET
 function getSpreadsheetId() {
   const id =
     process.env
-      .PRESEASON_SPREADSHEET_ID;
+      .PRESEASON_3_SPREADSHEET_ID;
 
   if (!id) {
     throw new Error(
-      "PRESEASON_SPREADSHEET_ID is missing."
+      "PRESEASON_3_SPREADSHEET_ID is missing."
     );
   }
 
@@ -1159,7 +1159,7 @@ async function createPayPalOrder(
                   reservation.reservationId,
 
                 description:
-                  "Akron Rescue Cats Preseason Game 1 Football Squares: " +
+                  "Akron Rescue Cats Preseason Game 3 Football Squares: " +
                   reservation.squares.join(", "),
 
                 amount: {
@@ -1823,7 +1823,7 @@ export default {
     } catch (error) {
 
       console.error(
-        "Preseason Game 1 API error:",
+        "Preseason Game 3 API error:",
         error
       );
 
