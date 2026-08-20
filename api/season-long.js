@@ -1094,8 +1094,7 @@ function verifyCompletedPayPalOrder(
   }
 
   let paidTotal = 0;
-  let reservationMatches =
-    false;
+  let reservationMatches = false;
 
   const units =
     Array.isArray(
@@ -1107,20 +1106,26 @@ function verifyCompletedPayPalOrder(
   units.forEach(
     function(unit) {
 
+      /*
+      PayPal may return custom_id
+      on the purchase unit.
+      */
+
       if (
         String(
           unit.custom_id || ""
         ) ===
         reservationId
       ) {
-        reservationMatches =
-          true;
+        reservationMatches = true;
       }
 
       const captures =
         unit?.payments?.captures;
 
-      if (!Array.isArray(captures)) {
+      if (
+        !Array.isArray(captures)
+      ) {
         return;
       }
 
@@ -1136,11 +1141,28 @@ function verifyCompletedPayPalOrder(
             return;
           }
 
+          /*
+          PayPal may also return custom_id
+          on the completed capture itself.
+          */
+
           if (
+            String(
+              capture.custom_id || ""
+            ) ===
+            reservationId
+          ) {
+            reservationMatches = true;
+          }
+
+          const currency =
             String(
               capture?.amount?.currency_code ||
               ""
-            ).toUpperCase() !==
+            ).toUpperCase();
+
+          if (
+            currency !==
             CURRENCY_CODE
           ) {
             throw new Error(
@@ -1163,6 +1185,20 @@ function verifyCompletedPayPalOrder(
       "The PayPal payment does not match this reservation."
     );
   }
+
+  if (
+    Math.round(
+      paidTotal * 100
+    ) !==
+    Math.round(
+      expectedTotal * 100
+    )
+  ) {
+    throw new Error(
+      "The PayPal payment amount does not match the reservation."
+    );
+  }
+}
 
   if (
     Math.round(
