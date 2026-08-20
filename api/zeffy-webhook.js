@@ -997,17 +997,47 @@ export default {
       }
 
 
-      const gameAnswer =
-        findQuestionAnswer(
-          payment?.buyer_questions,
-          "which game"
-        );
+    const gameAnswer =
+  findQuestionAnswer(
+    payment?.buyer_questions,
+    "which game"
+  );
+
+const description =
+  cleanText(
+    payment?.description
+  ).toLowerCase();
+
+let matchedBoard =
+  findBoard(
+    gameAnswer
+  );
 
 
-      const matchedBoard =
-        findBoard(
-          gameAnswer
-        );
+/*
+Season-Long uses its own dedicated
+Zeffy campaign, so it does not need
+a "Which Game?" answer.
+
+If the Zeffy payment description
+identifies the Season-Long campaign,
+route it directly to Season-Long.
+*/
+
+if (
+  !matchedBoard &&
+  description.includes(
+    "season long"
+  )
+) {
+  matchedBoard = {
+    key:
+      "seasonLong",
+
+    config:
+      BOARDS.seasonLong
+  };
+}
 
 
       /*
