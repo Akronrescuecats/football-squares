@@ -154,11 +154,11 @@ SPREADSHEET
 function getSpreadsheetId() {
   const id =
     process.env
-      .SEASON_LONG_SPREADSHEET_ID;
+      SEASON_LONG_SPREADSHEET_ID;
 
   if (!id) {
     throw new Error(
-"SEASON_LONG_SPREADSHEET_ID is missing."
+      "SEASON_LONG_SPREADSHEET_ID is missing."
     );
   }
 
@@ -1159,7 +1159,7 @@ async function createPayPalOrder(
                   reservation.reservationId,
 
                 description:
-                  "Akron Rescue Cats Season-Long Football Squares: " +
+"Akron Rescue Cats Season-Long Football Squares: " +
                   reservation.squares.join(", "),
 
                 amount: {
@@ -1823,7 +1823,7 @@ export default {
     } catch (error) {
 
       console.error(
-"Season-Long API error:"
+        "Season-Long API error:"
         error
       );
 
