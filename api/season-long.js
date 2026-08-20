@@ -1,8 +1,7 @@
 import crypto from "crypto";
 
-const HOLD_MINUTES = 15;
-const PRICE_PER_SQUARE = 100;
 const SHEET_NAME = "Squares";
+const SETTINGS_SHEET_NAME = "Settings";
 const CURRENCY_CODE = "USD";
 
 /*
@@ -34,8 +33,7 @@ function getGoogleCredentials() {
   let credentials;
 
   try {
-    credentials =
-      JSON.parse(raw);
+    credentials = JSON.parse(raw);
   } catch (error) {
     throw new Error(
       "GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON."
@@ -60,9 +58,7 @@ async function getAccessToken() {
     getGoogleCredentials();
 
   const now =
-    Math.floor(
-      Date.now() / 1000
-    );
+    Math.floor(Date.now() / 1000);
 
   const header = {
     alg: "RS256",
@@ -70,20 +66,13 @@ async function getAccessToken() {
   };
 
   const claims = {
-    iss:
-      credentials.client_email,
-
+    iss: credentials.client_email,
     scope:
       "https://www.googleapis.com/auth/spreadsheets",
-
     aud:
       "https://oauth2.googleapis.com/token",
-
-    iat:
-      now,
-
-    exp:
-      now + 3600
+    iat: now,
+    exp: now + 3600
   };
 
   const unsignedToken =
@@ -99,7 +88,6 @@ async function getAccessToken() {
     crypto.createPrivateKey({
       key:
         credentials.private_key,
-
       format:
         "pem"
     });
@@ -116,16 +104,13 @@ async function getAccessToken() {
   const jwt =
     unsignedToken +
     "." +
-    base64Url(
-      signature
-    );
+    base64Url(signature);
 
   const response =
     await fetch(
       "https://oauth2.googleapis.com/token",
       {
-        method:
-          "POST",
+        method: "POST",
 
         headers: {
           "Content-Type":
@@ -173,13 +158,166 @@ function getSpreadsheetId() {
 
   if (!id) {
     throw new Error(
-      "SEASON_LONG_SPREADSHEET_ID is missing."
+"SEASON_LONG_SPREADSHEET_ID is missing."
     );
   }
 
   return id;
 }
 
+
+/*
+=====================================================
+READ SETTINGS TAB
+=====================================================
+
+Settings:
+
+B2 = Price Per Square
+B3 = Board Title
+B4 = Hold Minutes
+B5 = 1st Quarter Payout
+B6 = Halftime Payout
+B7 = 3rd Quarter Payout
+B8 = Final Payout
+=====================================================
+*/
+
+async function getSettings(
+  token
+) {
+  const spreadsheetId =
+    getSpreadsheetId();
+
+  const range =
+    encodeURIComponent(
+      `${SETTINGS_SHEET_NAME}!B2:B8`
+    );
+
+  const url =
+    "https://sheets.googleapis.com/v4/spreadsheets/" +
+    spreadsheetId +
+    "/values/" +
+    range;
+
+  const response =
+    await fetch(
+      url,
+      {
+        headers: {
+          Authorization:
+            "Bearer " + token
+        },
+
+        cache:
+          "no-store"
+      }
+    );
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error?.message ||
+      "Could not read the Settings tab."
+    );
+  }
+
+  const values =
+    data.values || [];
+
+  const getValue =
+    function(index) {
+      return values[index]?.[0] ?? "";
+    };
+
+  const pricePerSquare =
+    Number(getValue(0));
+
+  const boardTitle =
+    String(
+      getValue(1) ||
+      "2026 Preseason Weeks 1-3"
+    ).trim();
+
+  const holdMinutes =
+    Number(getValue(2));
+
+  const q1 =
+    Number(getValue(3));
+
+  const halftime =
+    Number(getValue(4));
+
+  const q3 =
+    Number(getValue(5));
+
+  const final =
+    Number(getValue(6));
+
+  if (
+    !Number.isFinite(
+      pricePerSquare
+    ) ||
+    pricePerSquare <= 0
+  ) {
+    throw new Error(
+      "Price Per Square in Settings!B2 is invalid."
+    );
+  }
+
+  if (
+    !Number.isFinite(
+      holdMinutes
+    ) ||
+    holdMinutes <= 0
+  ) {
+    throw new Error(
+      "Hold Minutes in Settings!B4 is invalid."
+    );
+  }
+
+  return {
+    pricePerSquare:
+      pricePerSquare,
+
+    boardTitle:
+      boardTitle,
+
+    holdMinutes:
+      holdMinutes,
+
+    payouts: {
+      q1:
+        Number.isFinite(q1)
+          ? q1
+          : 0,
+
+      halftime:
+        Number.isFinite(halftime)
+          ? halftime
+          : 0,
+
+      q3:
+        Number.isFinite(q3)
+          ? q3
+          : 0,
+
+      final:
+        Number.isFinite(final)
+          ? final
+          : 0
+    }
+  };
+}
+
+
+/*
+=====================================================
+READ SQUARES
+=====================================================
+*/
 
 async function getAllRows(
   token
@@ -204,8 +342,7 @@ async function getAllRows(
       {
         headers: {
           Authorization:
-            "Bearer " +
-            token
+            "Bearer " + token
         },
 
         cache:
@@ -283,13 +420,11 @@ async function batchUpdateRows(
     await fetch(
       url,
       {
-        method:
-          "POST",
+        method: "POST",
 
         headers: {
           Authorization:
-            "Bearer " +
-            token,
+            "Bearer " + token,
 
           "Content-Type":
             "application/json"
@@ -330,21 +465,15 @@ function normalizeStatus(
   value
 ) {
   const status =
-    String(
-      value || ""
-    )
+    String(value || "")
       .trim()
       .toLowerCase();
 
-  if (
-    status === "sold"
-  ) {
+  if (status === "sold") {
     return "Sold";
   }
 
-  if (
-    status === "pending"
-  ) {
+  if (status === "pending") {
     return "Pending";
   }
 
@@ -355,9 +484,7 @@ function normalizeStatus(
 function normalizeSquareList(
   values
 ) {
-  if (
-    !Array.isArray(values)
-  ) {
+  if (!Array.isArray(values)) {
     throw new Error(
       "Please select at least one square."
     );
@@ -429,13 +556,14 @@ function rowsToPublicSquares(
 
 /*
 =====================================================
-EXPIRED RESERVATIONS
+RELEASE EXPIRED RESERVATIONS
 =====================================================
 */
 
 async function releaseExpiredReservations(
   token,
-  rows
+  rows,
+  holdMinutes
 ) {
   const now =
     Date.now();
@@ -474,7 +602,7 @@ async function releaseExpiredReservations(
 
       if (
         minutesPassed <
-        HOLD_MINUTES
+        holdMinutes
       ) {
         return;
       }
@@ -528,6 +656,11 @@ async function reserveSquares(
     );
   }
 
+  const settings =
+    await getSettings(
+      token
+    );
+
   const squares =
     normalizeSquareList(
       formData.squares
@@ -576,7 +709,8 @@ async function reserveSquares(
 
   await releaseExpiredReservations(
     token,
-    rows
+    rows,
+    settings.holdMinutes
   );
 
   rows =
@@ -677,17 +811,20 @@ async function reserveSquares(
       squares.length,
 
     pricePerSquare:
-      PRICE_PER_SQUARE,
+      settings.pricePerSquare,
 
     total:
       squares.length *
-      PRICE_PER_SQUARE,
+      settings.pricePerSquare,
 
     expiresInMinutes:
-      HOLD_MINUTES,
+      settings.holdMinutes,
 
     reservationId:
-      reservationId
+      reservationId,
+
+    settings:
+      settings
   };
 }
 
@@ -809,12 +946,6 @@ async function getPayPalOrder(
 }
 
 
-/*
-=====================================================
-PAYPAL IDEMPOTENCY ID
-=====================================================
-*/
-
 function makePayPalRequestId(
   type,
   reservationId
@@ -848,6 +979,11 @@ async function validatePayPalReservation(
   googleToken,
   paymentData
 ) {
+  const settings =
+    await getSettings(
+      googleToken
+    );
+
   const email =
     String(
       paymentData?.email || ""
@@ -881,7 +1017,8 @@ async function validatePayPalReservation(
 
   await releaseExpiredReservations(
     googleToken,
-    rows
+    rows,
+    settings.holdMinutes
   );
 
   rows =
@@ -954,9 +1091,12 @@ async function validatePayPalReservation(
     reservationId:
       reservationId,
 
+    settings:
+      settings,
+
     total:
       squares.length *
-      PRICE_PER_SQUARE
+      settings.pricePerSquare
   };
 }
 
@@ -1062,7 +1202,7 @@ async function createPayPalOrder(
 
 /*
 =====================================================
-VERIFY COMPLETED PAYPAL ORDER
+VERIFY PAYPAL
 =====================================================
 */
 
@@ -1090,6 +1230,7 @@ function verifyCompletedPayPalOrder(
       : [];
 
   let paidTotal = 0;
+
   let reservationMatches =
     false;
 
@@ -1110,9 +1251,7 @@ function verifyCompletedPayPalOrder(
         unit?.payments?.captures;
 
       if (
-        !Array.isArray(
-          captures
-        )
+        !Array.isArray(captures)
       ) {
         return;
       }
@@ -1183,7 +1322,7 @@ function verifyCompletedPayPalOrder(
 
 /*
 =====================================================
-CAPTURE PAYPAL ORDER
+CAPTURE PAYPAL
 =====================================================
 */
 
@@ -1202,7 +1341,7 @@ async function capturePayPalOrder(
     );
   }
 
-  let currentRows =
+  const currentRows =
     await getAllRows(
       googleToken
     );
@@ -1214,8 +1353,7 @@ async function capturePayPalOrder(
         return (
           String(
             row[8] || ""
-          ) ===
-            orderId &&
+          ) === orderId &&
 
           String(
             row[7] || ""
@@ -1355,7 +1493,8 @@ async function capturePayPalOrder(
           "PayPal",
           "Paid",
           orderId,
-          PRICE_PER_SQUARE,
+          reservation.settings
+            .pricePerSquare,
           paymentDate,
           reservation.reservationId
         ]]
@@ -1394,6 +1533,11 @@ async function savePaymentMethod(
   googleToken,
   paymentData
 ) {
+  const settings =
+    await getSettings(
+      googleToken
+    );
+
   const email =
     String(
       paymentData?.email || ""
@@ -1436,7 +1580,8 @@ async function savePaymentMethod(
 
   await releaseExpiredReservations(
     googleToken,
-    rows
+    rows,
+    settings.holdMinutes
   );
 
   rows =
@@ -1533,6 +1678,15 @@ export default {
       const token =
         await getAccessToken();
 
+      const settings =
+        await getSettings(
+          token
+        );
+
+
+      /*
+      GET BOARD
+      */
 
       if (
         request.method ===
@@ -1546,7 +1700,8 @@ export default {
 
         await releaseExpiredReservations(
           token,
-          rows
+          rows,
+          settings.holdMinutes
         );
 
         rows =
@@ -1558,6 +1713,9 @@ export default {
           success:
             true,
 
+          settings:
+            settings,
+
           squares:
             rowsToPublicSquares(
               rows
@@ -1565,6 +1723,10 @@ export default {
         });
       }
 
+
+      /*
+      POST ACTIONS
+      */
 
       if (
         request.method ===
@@ -1579,7 +1741,6 @@ export default {
           body.action ===
           "reserveSquares"
         ) {
-
           return Response.json(
             await reserveSquares(
               token,
@@ -1593,7 +1754,6 @@ export default {
           body.action ===
           "createPayPalOrder"
         ) {
-
           return Response.json(
             await createPayPalOrder(
               token,
@@ -1607,7 +1767,6 @@ export default {
           body.action ===
           "capturePayPalOrder"
         ) {
-
           return Response.json(
             await capturePayPalOrder(
               token,
@@ -1621,7 +1780,6 @@ export default {
           body.action ===
           "savePaymentMethod"
         ) {
-
           return Response.json(
             await savePaymentMethod(
               token,
@@ -1665,7 +1823,7 @@ export default {
     } catch (error) {
 
       console.error(
-        "Season-Long API error:",
+"Season-Long API error:"
         error
       );
 
