@@ -57,6 +57,17 @@ const BOARDS = {
       "season long football squares",
       "season-long football squares"
     ]
+  },
+    regular1: {
+    spreadsheetEnv:
+      "REGULAR_1_SPREADSHEET_ID",
+
+    gameNames: [
+      "regular 1",
+      "regular season 1",
+      "regular season week 1",
+      "week 1"
+    ]
   }
 };
 
