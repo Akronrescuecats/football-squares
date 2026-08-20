@@ -46,6 +46,17 @@ const BOARDS = {
       "preseason game 3",
       "pre season game 3"
     ]
+  },
+    seasonLong: {
+    spreadsheetEnv:
+      "SEASON_LONG_SPREADSHEET_ID",
+
+    gameNames: [
+      "season long",
+      "season-long",
+      "season long football squares",
+      "season-long football squares"
+    ]
   }
 };
 
