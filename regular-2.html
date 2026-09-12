@@ -74,24 +74,6 @@
       line-height: 1.8;
     }
 
-    .sold-out-banner {
-      display: none;
-      max-width: 650px;
-      margin: 18px auto;
-      padding: 18px;
-      background: #fee2e2;
-      border: 3px solid #c60c30;
-      border-radius: 10px;
-      color: #991b1b;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    .sold-out-subtext {
-      margin-top: 6px;
-      font-size: 16px;
-    }
-
     .selection-bar {
       position: sticky;
       top: 5px;
@@ -379,10 +361,7 @@
     $25 per square
   </div>
 
-  <div
-    id="payouts"
-    class="price-line"
-  ></div>
+  <div id="payouts" class="price-line"></div>
 
   <p class="instructions">
     Tap every green square you would like.
@@ -395,16 +374,6 @@
     🟦 Selected &nbsp;&nbsp;
     🟨 Pending &nbsp;&nbsp;
     🟥 Sold
-  </div>
-
-  <div
-    id="soldOutBanner"
-    class="sold-out-banner"
-  >
-    SOLD OUT!
-    <div class="sold-out-subtext">
-      All 100 squares have been sold.
-    </div>
   </div>
 
   <div class="selection-bar">
@@ -788,64 +757,6 @@ function cleanSelections() {
 }
 
 
-function isBoardSoldOut() {
-
-  const soldCount =
-    currentSquares.filter(
-      function(item) {
-
-        return (
-          String(
-            item.status || ""
-          )
-          .trim()
-          .toLowerCase() ===
-          "sold"
-        );
-
-      }
-    ).length;
-
-  return soldCount >= 100;
-}
-
-
-function updateSoldOutDisplay() {
-
-  const soldOut =
-    isBoardSoldOut();
-
-  const banner =
-    document.getElementById(
-      "soldOutBanner"
-    );
-
-  const selectionBar =
-    document.querySelector(
-      ".selection-bar"
-    );
-
-  if (soldOut) {
-
-    selectedSquares.clear();
-
-    banner.style.display =
-      "block";
-
-    selectionBar.style.display =
-      "none";
-
-  } else {
-
-    banner.style.display =
-      "none";
-
-    selectionBar.style.display =
-      "block";
-  }
-}
-
-
 function displayBoard() {
 
   const board =
@@ -926,11 +837,7 @@ function displayBoard() {
 
     });
 
-  updateSoldOutDisplay();
-
-  if (!isBoardSoldOut()) {
-    updateSelectionSummary();
-  }
+  updateSelectionSummary();
 }
 
 
@@ -1053,10 +960,6 @@ RESERVATION
 */
 
 function openReservationModal() {
-
-  if (isBoardSoldOut()) {
-    return;
-  }
 
   const squares =
     getSelectedSquares();
