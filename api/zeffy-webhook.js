@@ -62,11 +62,35 @@ const BOARDS = {
     spreadsheetEnv:
       "REGULAR_1_SPREADSHEET_ID",
 
-    gameNames: [
+        gameNames: [
       "regular 1",
       "regular season 1",
       "regular season week 1",
       "week 1"
+    ]
+  },
+
+  regular2: {
+    spreadsheetEnv:
+      "REGULAR_2_SPREADSHEET_ID",
+
+    gameNames: [
+      "regular 2",
+      "regular season 2",
+      "regular season week 2",
+      "week 2"
+    ]
+  },
+
+  regular3: {
+    spreadsheetEnv:
+      "REGULAR_3_SPREADSHEET_ID",
+
+    gameNames: [
+      "regular 3",
+      "regular season 3",
+      "regular season week 3",
+      "week 3"
     ]
   }
 };
