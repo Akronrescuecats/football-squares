@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -13,6 +15,7 @@
   </title>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
@@ -96,150 +99,158 @@
       font-weight: bold;
     }
 
+    .board-button:hover {
+      background: #002766;
+    }
+
+    .sold-out,
     .coming-soon {
       background: #9ca3af;
+      color: white;
       cursor: default;
     }
+
   </style>
+
 </head>
 
 <body>
 
-  <div class="page">
+<div class="page">
 
-    <a
-      class="back-link"
-      href="/"
+  <a
+    class="back-link"
+    href="/"
+  >
+    ← All Football Boards
+  </a>
+
+  <h1>
+    Akron Rescue Cats
+  </h1>
+
+  <h2>
+    Regular Season Football Squares
+  </h2>
+
+  <div class="price">
+    $25 per square
+  </div>
+
+  <p class="intro">
+    Choose the Bills game you would like to play.
+    Each game has its own fresh 100-square board.
+  </p>
+
+
+  <!-- WEEK 1 -->
+
+  <div class="game">
+
+    <div class="week">
+      WEEK 1
+    </div>
+
+    <div class="matchup">
+      Bills at Houston Texans
+    </div>
+
+    <div
+      class="board-button sold-out"
     >
-      ← All Football Boards
-    </a>
-
-    <h1>
-      Akron Rescue Cats
-    </h1>
-
-    <h2>
-      Regular Season Football Squares
-    </h2>
-
-    <div class="price">
-      $25 per square
-    </div>
-
-    <p class="intro">
-      Choose the Bills game you would like to play.
-      Each game has its own fresh 100-square board.
-    </p>
-
-
-    <!-- WEEK 1 -->
-
-    <div class="game">
-
-      <div class="week">
-        WEEK 1
-      </div>
-
-      <div class="matchup">
-        Bills at Houston Texans
-      </div>
-
-      <a
-        class="board-button"
-        href="/regular-1.html"
-      >
-        View Board
-      </a>
-
-    </div>
-
-
-    <!-- WEEK 2 -->
-
-    <div class="game">
-
-      <div class="week">
-        WEEK 2
-      </div>
-
-      <div class="matchup">
-        Detroit Lions at Bills
-      </div>
-
-      <a
-        class="board-button"
-        href="/regular-2.html"
-      >
-        View Board
-      </a>
-
-    </div>
-
-
-    <!-- WEEK 3 -->
-
-    <div class="game">
-
-      <div class="week">
-        WEEK 3
-      </div>
-
-      <div class="matchup">
-        Los Angeles Chargers at Bills
-      </div>
-
-      <a
-        class="board-button"
-        href="/regular-3.html"
-      >
-        View Board
-      </a>
-
-    </div>
-
-
-    <!-- WEEK 4 -->
-
-    <div class="game">
-
-      <div class="week">
-        WEEK 4
-      </div>
-
-      <div class="matchup">
-        New England Patriots at Bills
-      </div>
-
-      <div
-        class="board-button coming-soon"
-      >
-        Coming Soon
-      </div>
-
-    </div>
-
-
-    <!-- WEEK 5 -->
-
-    <div class="game">
-
-      <div class="week">
-        WEEK 5
-      </div>
-
-      <div class="matchup">
-        Bills at Los Angeles Rams
-      </div>
-
-      <div
-        class="board-button coming-soon"
-      >
-        Coming Soon
-      </div>
-
+      SOLD OUT
     </div>
 
   </div>
 
+
+  <!-- WEEK 2 -->
+
+  <div class="game">
+
+    <div class="week">
+      WEEK 2
+    </div>
+
+    <div class="matchup">
+      Detroit Lions at Bills
+    </div>
+
+    <a
+      class="board-button"
+      href="/regular-2.html"
+    >
+      View Board
+    </a>
+
+  </div>
+
+
+  <!-- WEEK 3 -->
+
+  <div class="game">
+
+    <div class="week">
+      WEEK 3
+    </div>
+
+    <div class="matchup">
+      Los Angeles Chargers at Bills
+    </div>
+
+    <a
+      class="board-button"
+      href="/regular-3.html"
+    >
+      View Board
+    </a>
+
+  </div>
+
+
+  <!-- WEEK 4 -->
+
+  <div class="game">
+
+    <div class="week">
+      WEEK 4
+    </div>
+
+    <div class="matchup">
+      New England Patriots at Bills
+    </div>
+
+    <div
+      class="board-button coming-soon"
+    >
+      Coming Soon
+    </div>
+
+  </div>
+
+
+  <!-- WEEK 5 -->
+
+  <div class="game">
+
+    <div class="week">
+      WEEK 5
+    </div>
+
+    <div class="matchup">
+      Bills at Los Angeles Rams
+    </div>
+
+    <div
+      class="board-button coming-soon"
+    >
+      Coming Soon
+    </div>
+
+  </div>
+
+</div>
+
 </body>
+
 </html>
