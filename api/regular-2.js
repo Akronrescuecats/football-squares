@@ -11,8 +11,7 @@ GOOGLE AUTH
 */
 
 function base64Url(input) {
-  return Buffer
-    .from(input)
+  return Buffer.from(input)
     .toString("base64")
     .replace(/=/g, "")
     .replace(/\+/g, "-")
@@ -1193,6 +1192,7 @@ function verifyCompletedPayPalOrder(
       : [];
 
   let paidTotal = 0;
+
   let reservationMatches =
     false;
 
@@ -1602,6 +1602,314 @@ async function savePaymentMethod(
 
 /*
 =====================================================
+ZEFFY WEBHOOK HELPERS
+=====================================================
+*/
+
+function getZeffyEventType(body) {
+  return String(
+    body?.type ||
+    body?.event ||
+    body?.event_type ||
+    body?.eventType ||
+    ""
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function getZeffyPaymentObject(body) {
+  return (
+    body?.data?.payment ||
+    body?.payment ||
+    body?.data ||
+    body ||
+    {}
+  );
+}
+
+function firstNonBlank(values) {
+  for (const value of values) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
+    ) {
+      return value;
+    }
+  }
+
+  return "";
+}
+
+function getZeffyBuyerEmail(payment) {
+  return String(
+    firstNonBlank([
+      payment?.buyer?.email,
+      payment?.contact?.email,
+      payment?.customer?.email,
+      payment?.billing_details?.email,
+      payment?.billingDetails?.email,
+      payment?.payer?.email,
+      payment?.email,
+      payment?.buyer_email,
+      payment?.buyerEmail,
+      payment?.contact_email,
+      payment?.contactEmail
+    ])
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function getZeffyPaymentId(payment) {
+  return String(
+    firstNonBlank([
+      payment?.id,
+      payment?.payment_id,
+      payment?.paymentId,
+      payment?.transaction_id,
+      payment?.transactionId,
+      payment?.uuid
+    ])
+  ).trim();
+}
+
+function getZeffyPaymentStatus(payment) {
+  return String(
+    firstNonBlank([
+      payment?.status,
+      payment?.payment_status,
+      payment?.paymentStatus
+    ])
+  )
+    .trim()
+    .toLowerCase();
+}
+
+/*
+=====================================================
+PROCESS COMPLETED ZEFFY PAYMENT
+=====================================================
+*/
+
+async function processZeffyCompletedPayment(
+  googleToken,
+  body
+) {
+  const payment =
+    getZeffyPaymentObject(body);
+
+  const email =
+    getZeffyBuyerEmail(payment);
+
+  const paymentId =
+    getZeffyPaymentId(payment);
+
+  const paymentStatus =
+    getZeffyPaymentStatus(payment);
+
+  if (!email) {
+    throw new Error(
+      "Zeffy completed payment did not include a buyer email."
+    );
+  }
+
+  if (
+    paymentStatus &&
+    ![
+      "succeeded",
+      "completed",
+      "paid",
+      "success"
+    ].includes(paymentStatus)
+  ) {
+    throw new Error(
+      "Zeffy payment is not marked completed."
+    );
+  }
+
+  const rows =
+    await getAllRows(
+      googleToken
+    );
+
+  if (paymentId) {
+    const alreadyProcessed =
+      rows.some(
+        function(row) {
+          return (
+            String(
+              row[8] || ""
+            ).trim() ===
+              paymentId &&
+
+            String(
+              row[7] || ""
+            )
+              .trim()
+              .toLowerCase() ===
+              "paid"
+          );
+        }
+      );
+
+    if (alreadyProcessed) {
+      return {
+        success: true,
+        alreadyProcessed: true,
+        paymentId
+      };
+    }
+  }
+
+  const matchingRows = [];
+
+  rows.forEach(
+    function(row, index) {
+
+      const status =
+        normalizeStatus(
+          row[1]
+        );
+
+      const rowEmail =
+        String(
+          row[3] || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      const paymentMethod =
+        String(
+          row[6] || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      if (
+        status === "Pending" &&
+        rowEmail === email &&
+        paymentMethod === "zeffy"
+      ) {
+        matchingRows.push({
+          index,
+          row,
+          reservationId:
+            String(
+              row[11] || ""
+            ).trim()
+        });
+      }
+    }
+  );
+
+  if (!matchingRows.length) {
+    throw new Error(
+      "No pending Zeffy reservation matched buyer email " +
+      email +
+      "."
+    );
+  }
+
+  const groups =
+    new Map();
+
+  matchingRows.forEach(
+    function(item) {
+
+      const key =
+        item.reservationId ||
+        `row-${item.index}`;
+
+      if (!groups.has(key)) {
+        groups.set(
+          key,
+          []
+        );
+      }
+
+      groups
+        .get(key)
+        .push(item);
+    }
+  );
+
+  if (groups.size !== 1) {
+    throw new Error(
+      "More than one pending Zeffy reservation exists for " +
+      email +
+      ". Manual review is required."
+    );
+  }
+
+  const reservationRows =
+    Array.from(
+      groups.values()
+    )[0];
+
+  const paymentDate =
+    new Date()
+      .toISOString();
+
+  const updates = [];
+
+  reservationRows.forEach(
+    function(item) {
+
+      const row =
+        item.row;
+
+      const sheetRow =
+        item.index + 2;
+
+      updates.push({
+        range:
+          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
+
+        values: [[
+          "Sold",
+          row[2] || "",
+          row[3] || "",
+          row[4] || "",
+          row[5] || "",
+          "Zeffy",
+          "Paid",
+          paymentId || "Zeffy",
+          row[9] || "",
+          paymentDate,
+          row[11] || ""
+        ]]
+      });
+    }
+  );
+
+  await batchUpdateRows(
+    googleToken,
+    updates
+  );
+
+  return {
+    success: true,
+
+    paymentId:
+      paymentId || "",
+
+    email,
+
+    squares:
+      reservationRows.map(
+        function(item) {
+          return Number(
+            item.row[0]
+          );
+        }
+      )
+  };
+}
+
+/*
+=====================================================
 MAIN API
 =====================================================
 */
@@ -1615,51 +1923,68 @@ export default {
       const token =
         await getAccessToken();
 
-      const settings =
-        await getSettings(
-          token
-        );
-
-      if (
-        request.method ===
-        "GET"
-      ) {
-
-        let rows =
-          await getAllRows(
-            token
-          );
-
-        await releaseExpiredReservations(
-          token,
-          rows,
-          settings.holdMinutes
-        );
-
-        rows =
-          await getAllRows(
-            token
-          );
-
-        return Response.json({
-          success: true,
-
-          settings,
-
-          squares:
-            rowsToPublicSquares(
-              rows
-            )
-        });
-      }
+      /*
+      ===============================================
+      HANDLE POST REQUESTS
+      ===============================================
+      */
 
       if (
         request.method ===
         "POST"
       ) {
 
-        const body =
-          await request.json();
+        const rawBody =
+          await request.text();
+
+        let body;
+
+        try {
+          body =
+            rawBody
+              ? JSON.parse(rawBody)
+              : {};
+        } catch (error) {
+          throw new Error(
+            "Request body is not valid JSON."
+          );
+        }
+
+        /*
+        -----------------------------------------------
+        ZEFFY PAYMENT COMPLETED WEBHOOK
+        -----------------------------------------------
+        */
+
+        const eventType =
+          getZeffyEventType(
+            body
+          );
+
+        if (
+          eventType ===
+          "payment.completed"
+        ) {
+
+          const result =
+            await processZeffyCompletedPayment(
+              token,
+              body
+            );
+
+          return Response.json(
+            result,
+            {
+              status: 200
+            }
+          );
+        }
+
+        /*
+        -----------------------------------------------
+        NORMAL WEBSITE ACTIONS
+        -----------------------------------------------
+        */
 
         if (
           body.action ===
@@ -1720,6 +2045,50 @@ export default {
             status: 400
           }
         );
+      }
+
+      /*
+      ===============================================
+      HANDLE GET REQUESTS
+      ===============================================
+      */
+
+      const settings =
+        await getSettings(
+          token
+        );
+
+      if (
+        request.method ===
+        "GET"
+      ) {
+
+        let rows =
+          await getAllRows(
+            token
+          );
+
+        await releaseExpiredReservations(
+          token,
+          rows,
+          settings.holdMinutes
+        );
+
+        rows =
+          await getAllRows(
+            token
+          );
+
+        return Response.json({
+          success: true,
+
+          settings,
+
+          squares:
+            rowsToPublicSquares(
+              rows
+            )
+        });
       }
 
       return Response.json(
