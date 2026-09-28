@@ -104,11 +104,12 @@
     }
 
     .sold-out,
-    .coming-soon {
-      background: #9ca3af;
-      color: white;
-      cursor: default;
-    }
+.coming-soon {
+  background: #9ca3af;
+  color: white;
+  cursor: default;
+  pointer-events: none;
+}
 
   </style>
 
@@ -494,6 +495,57 @@
 
 </div>
 
-</body>
+<script>
+async function updateSoldOutButtons() {
+  const buttons = document.querySelectorAll(".board-button[href]");
 
+  for (const button of buttons) {
+    const href = button.getAttribute("href");
+    const match = href.match(/regular-(\d+)\.html/);
+
+    if (!match) continue;
+
+    const week = match[1];
+
+    try {
+      let apiUrl;
+
+      // Weeks 1-9 use the existing shared API setup
+      if (Number(week) <= 9) {
+        apiUrl = `/api/regular?week=${week}`;
+      } else {
+        // Weeks 10-17 use their individual API files
+        apiUrl = `/api/regular-${week}`;
+      }
+
+      const response = await fetch(apiUrl, { cache: "no-store" });
+
+      if (!response.ok) continue;
+
+      const data = await response.json();
+      const squares = Array.isArray(data.squares) ? data.squares : [];
+
+      const soldOut =
+        squares.length === 100 &&
+        squares.every(
+          square =>
+            String(square.status || "").toLowerCase() === "sold"
+        );
+
+      if (soldOut) {
+        button.textContent = "SOLD OUT";
+        button.removeAttribute("href");
+        button.classList.add("sold-out");
+      }
+
+    } catch (error) {
+      console.error(`Could not check Week ${week}:`, error);
+    }
+  }
+}
+
+updateSoldOutButtons();
+</script>
+
+</body>
 </html>
