@@ -13,9 +13,7 @@ BOARD DEFINITIONS
 const BOARDS = {
   
   preseason1: {
-    spreadsheetEnv:
-      "PRESEASON_SPREADSHEET_ID",
-
+    spreadsheetEnv: "PRESEASON_SPREADSHEET_ID",
     gameNames: [
       "preseason 1",
       "pre season 1",
@@ -25,9 +23,7 @@ const BOARDS = {
   },
   
   preseason2: {
-    spreadsheetEnv:
-      "PRESEASON_2_SPREADSHEET_ID",
-
+    spreadsheetEnv: "PRESEASON_2_SPREADSHEET_ID",
     gameNames: [
       "preseason 2",
       "pre season 2",
@@ -37,9 +33,7 @@ const BOARDS = {
   },
 
   preseason3: {
-    spreadsheetEnv:
-      "PRESEASON_3_SPREADSHEET_ID",
-
+    spreadsheetEnv: "PRESEASON_3_SPREADSHEET_ID",
     gameNames: [
       "preseason 3",
       "pre season 3",
@@ -47,10 +41,9 @@ const BOARDS = {
       "pre season game 3"
     ]
   },
-    seasonLong: {
-    spreadsheetEnv:
-      "SEASON_LONG_SPREADSHEET_ID",
 
+  seasonLong: {
+    spreadsheetEnv: "SEASON_LONG_SPREADSHEET_ID",
     gameNames: [
       "season long",
       "season-long",
@@ -58,11 +51,10 @@ const BOARDS = {
       "season-long football squares"
     ]
   },
-    regular1: {
-    spreadsheetEnv:
-      "REGULAR_1_SPREADSHEET_ID",
 
-        gameNames: [
+  regular1: {
+    spreadsheetEnv: "REGULAR_1_SPREADSHEET_ID",
+    gameNames: [
       "regular 1",
       "regular season 1",
       "regular season week 1",
@@ -71,9 +63,7 @@ const BOARDS = {
   },
 
   regular2: {
-    spreadsheetEnv:
-      "REGULAR_2_SPREADSHEET_ID",
-
+    spreadsheetEnv: "REGULAR_2_SPREADSHEET_ID",
     gameNames: [
       "regular 2",
       "regular season 2",
@@ -83,14 +73,142 @@ const BOARDS = {
   },
 
   regular3: {
-    spreadsheetEnv:
-      "REGULAR_3_SPREADSHEET_ID",
-
+    spreadsheetEnv: "REGULAR_3_SPREADSHEET_ID",
     gameNames: [
       "regular 3",
       "regular season 3",
       "regular season week 3",
       "week 3"
+    ]
+  },
+
+  regular4: {
+    spreadsheetEnv: "REGULAR_4_SPREADSHEET_ID",
+    gameNames: [
+      "regular 4",
+      "regular season 4",
+      "regular season week 4",
+      "week 4"
+    ]
+  },
+
+  regular5: {
+    spreadsheetEnv: "REGULAR_5_SPREADSHEET_ID",
+    gameNames: [
+      "regular 5",
+      "regular season 5",
+      "regular season week 5",
+      "week 5"
+    ]
+  },
+
+  regular6: {
+    spreadsheetEnv: "REGULAR_6_SPREADSHEET_ID",
+    gameNames: [
+      "regular 6",
+      "regular season 6",
+      "regular season week 6",
+      "week 6"
+    ]
+  },
+
+  regular8: {
+    spreadsheetEnv: "REGULAR_8_SPREADSHEET_ID",
+    gameNames: [
+      "regular 8",
+      "regular season 8",
+      "regular season week 8",
+      "week 8"
+    ]
+  },
+
+  regular9: {
+    spreadsheetEnv: "REGULAR_9_SPREADSHEET_ID",
+    gameNames: [
+      "regular 9",
+      "regular season 9",
+      "regular season week 9",
+      "week 9"
+    ]
+  },
+
+  regular10: {
+    spreadsheetEnv: "REGULAR_10_SPREADSHEET_ID",
+    gameNames: [
+      "regular 10",
+      "regular season 10",
+      "regular season week 10",
+      "week 10"
+    ]
+  },
+
+  regular11: {
+    spreadsheetEnv: "REGULAR_11_SPREADSHEET_ID",
+    gameNames: [
+      "regular 11",
+      "regular season 11",
+      "regular season week 11",
+      "week 11"
+    ]
+  },
+
+  regular12: {
+    spreadsheetEnv: "REGULAR_12_SPREADSHEET_ID",
+    gameNames: [
+      "regular 12",
+      "regular season 12",
+      "regular season week 12",
+      "week 12"
+    ]
+  },
+
+  regular13: {
+    spreadsheetEnv: "REGULAR_13_SPREADSHEET_ID",
+    gameNames: [
+      "regular 13",
+      "regular season 13",
+      "regular season week 13",
+      "week 13"
+    ]
+  },
+
+  regular14: {
+    spreadsheetEnv: "REGULAR_14_SPREADSHEET_ID",
+    gameNames: [
+      "regular 14",
+      "regular season 14",
+      "regular season week 14",
+      "week 14"
+    ]
+  },
+
+  regular15: {
+    spreadsheetEnv: "REGULAR_15_SPREADSHEET_ID",
+    gameNames: [
+      "regular 15",
+      "regular season 15",
+      "regular season week 15",
+      "week 15"
+    ]
+  },
+
+  regular16: {
+    spreadsheetEnv: "REGULAR_16_SPREADSHEET_ID",
+    gameNames: [
+      "regular 16",
+      "regular season 16",
+      "regular season week 16",
+      "week 16"
+    ]
+  },
+
+  regular17: {
+    spreadsheetEnv: "REGULAR_17_SPREADSHEET_ID",
+    gameNames: [
+      "regular 17",
+      "regular season 17",
+      "regular season week 17",
+      "week 17"
     ]
   }
 };
