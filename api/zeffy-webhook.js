@@ -807,11 +807,15 @@ async function processPayment(
       payment?.amount
     );
 
-  const squareAnswer =
-    findQuestionAnswer(
-      payment?.buyer_questions,
-      "square number"
-    );
+const squareAnswer =
+  findQuestionAnswer(
+    payment?.buyer_questions,
+    "square number"
+  ) ||
+  findQuestionAnswer(
+    payment?.items?.[0]?.questions,
+    "square number"
+  );
 
   const squares =
     parseSquares(
@@ -1150,9 +1154,13 @@ export default {
       }
 
 
-    const gameAnswer =
+   const gameAnswer =
   findQuestionAnswer(
     payment?.buyer_questions,
+    "which game"
+  ) ||
+  findQuestionAnswer(
+    payment?.items?.[0]?.questions,
     "which game"
   );
 
