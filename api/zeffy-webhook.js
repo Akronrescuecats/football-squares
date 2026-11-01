@@ -505,6 +505,21 @@ function findBoard(
       gameAnswer
     );
 
+  const weekMatch = normalized.match(
+  /^week\s*(1[0-7]|[1-9])(?:\b|:)/
+);
+
+if (weekMatch) {
+  const weekNumber = Number(weekMatch[1]);
+  const boardKey = `regular${weekNumber}`;
+
+  if (BOARDS[boardKey]) {
+    return {
+      key: boardKey,
+      config: BOARDS[boardKey]
+    };
+  }
+}
   const entries =
     Object.entries(
       BOARDS
