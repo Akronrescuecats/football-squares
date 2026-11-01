@@ -1,3 +1,4 @@
+
 import crypto from "crypto";
 
 const SHEET_NAME = "Squares";
@@ -1172,11 +1173,11 @@ export default {
    const gameAnswer =
   findQuestionAnswer(
     payment?.buyer_questions,
-    "which game"
+    "week #: opponent"
   ) ||
   findQuestionAnswer(
     payment?.items?.[0]?.questions,
-    "which game"
+    "week #: opponent"
   );
 
 const description =
