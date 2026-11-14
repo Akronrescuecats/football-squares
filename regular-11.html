@@ -417,7 +417,10 @@
     style="display:none;"
   ></div>
 
-  <div id="board" class="board"></div>
+  <h2>Board 1</h2>
+  <div id="board1" class="board"></div>
+  <h2>Board 2</h2>
+  <div id="board2" class="board"></div>
 
   <button
     type="button"
@@ -600,7 +603,7 @@ const PAYMENT_LINKS = {
 };
 
 
-let currentSquares = [];
+let currentBoards = {1: [], 2: []};
 let selectedSquares = new Set();
 let currentReservation = null;
 
@@ -654,10 +657,11 @@ async function loadBoard() {
       );
     }
 
-    currentSquares =
-      Array.isArray(data.squares)
-        ? data.squares
-        : [];
+    currentBoards = {
+      1: Array.isArray(data.boards?.[1]?.squares) ? data.boards[1].squares : (data.squares || []),
+      2: Array.isArray(data.boards?.[2]?.squares) ? data.boards[2].squares : []
+    };
+    if (!data.boards?.[2]) throw new Error("Board 2 is not connected yet. Please try again later.");
 
     if (data.settings) {
 
@@ -707,165 +711,48 @@ BOARD
 =====================================================
 */
 
-function cleanSelections() {
-
-  const available =
-    new Set(
-      currentSquares
-        .filter(function(item) {
-          return (
-            String(
-              item.status ||
-              "Available"
-            ).toLowerCase() ===
-            "available"
-          );
-        })
-        .map(function(item) {
-          return Number(
-            item.square
-          );
-        })
-    );
-
-  Array
-    .from(selectedSquares)
-    .forEach(function(number) {
-
-      if (!available.has(number)) {
-        selectedSquares.delete(
-          number
-        );
-      }
-
-    });
+function selectionKey(board, square) { return `${board}:${square}`; }
+function getSelectedSquares() {
+  return Array.from(selectedSquares).map(key => {
+    const [board,square] = key.split(":").map(Number);
+    return {board,square};
+  }).sort((a,b)=>a.board-b.board || a.square-b.square);
 }
-
-
+function selectedDescription(items) { return items.map(x=>`Board ${x.board} #${x.square}`).join(", "); }
+function cleanSelections() {
+  for (const key of Array.from(selectedSquares)) {
+    const [board,square] = key.split(":").map(Number);
+    const item = currentBoards[board]?.find(x=>Number(x.square)===square);
+    if (!item || String(item.status||"").toLowerCase()!=="available") selectedSquares.delete(key);
+  }
+}
 function displayBoard() {
-
-  const board =
-    document.getElementById(
-      "board"
-    );
-
-  board.innerHTML = "";
-
-  currentSquares
-    .slice()
-    .sort(function(a, b) {
-      return (
-        Number(a.square) -
-        Number(b.square)
-      );
-    })
-    .forEach(function(item) {
-
-      const number =
-        Number(item.square);
-
-      const status =
-        String(
-          item.status ||
-          "Available"
-        ).toLowerCase();
-
-      const button =
-        document.createElement(
-          "button"
-        );
-
-      button.type = "button";
-
-      button.classList.add(
-        "square"
-      );
-
-      if (
-        status === "available" &&
-        selectedSquares.has(number)
-      ) {
-
-        button.classList.add(
-          "selected"
-        );
-
-      } else {
-
-        button.classList.add(
-          status
-        );
-      }
-
-      button.textContent =
-        number;
-
-      if (
-        status === "available"
-      ) {
-
-        button.onclick =
-          function() {
-            toggleSquare(
-              number
-            );
-          };
-
-      } else {
-
-        button.disabled = true;
-      }
-
-      board.appendChild(
-        button
-      );
-
+  for (const boardNumber of [1,2]) {
+    const board = document.getElementById(`board${boardNumber}`);
+    board.innerHTML = "";
+    currentBoards[boardNumber].slice().sort((a,b)=>Number(a.square)-Number(b.square)).forEach(item=>{
+      const number = Number(item.square);
+      const status = String(item.status||"Available").toLowerCase();
+      const key = selectionKey(boardNumber,number);
+      const button = document.createElement("button");
+      button.type="button";
+      button.classList.add("square", status==="available" && selectedSquares.has(key)?"selected":status);
+      button.textContent=number;
+      button.title=`Board ${boardNumber} square ${number}`;
+      if(status==="available") button.onclick=()=>toggleSquare(boardNumber,number);
+      else button.disabled=true;
+      board.appendChild(button);
     });
-
+  }
   updateSelectionSummary();
 }
-
-
-function toggleSquare(number) {
-
-  if (
-    selectedSquares.has(
-      number
-    )
-  ) {
-
-    selectedSquares.delete(
-      number
-    );
-
-  } else {
-
-    selectedSquares.add(
-      number
-    );
-  }
-
+function toggleSquare(board,number) {
+  const key=selectionKey(board,number);
+  if(selectedSquares.has(key)) selectedSquares.delete(key);
+  else selectedSquares.add(key);
   displayBoard();
 }
-
-
-function clearSelections() {
-
-  selectedSquares.clear();
-
-  displayBoard();
-}
-
-
-function getSelectedSquares() {
-
-  return Array
-    .from(selectedSquares)
-    .sort(function(a, b) {
-      return a - b;
-    });
-}
-
+function clearSelections() { selectedSquares.clear(); displayBoard(); }
 
 function updateSelectionSummary() {
 
@@ -961,7 +848,7 @@ function openReservationModal() {
     "selectedList"
   ).textContent =
     "Squares: " +
-    squares.join(", ") +
+    selectedDescription(squares) +
     " — Total: $" +
     total;
 
@@ -1045,7 +932,7 @@ document
 
                   data: {
 
-                    squares:
+                    selections:
                       squares,
 
                     name:
@@ -1106,7 +993,7 @@ document
           "paymentSummary"
         ).innerHTML =
           "<strong>Squares:</strong> " +
-          result.squares.join(", ") +
+          selectedDescription(result.selections) +
 
           "<br><strong>Price per square:</strong> $" +
           PRICE_PER_SQUARE +
@@ -1204,11 +1091,13 @@ async function choosePaymentMethod(
 
               data: {
 
-                squares:
-                  currentReservation.squares,
+                selections:
+                  currentReservation.selections,
 
                 email:
                   currentReservation.email,
+
+                reservationId: currentReservation.reservationId,
 
                 paymentMethod:
                   method
@@ -1320,8 +1209,8 @@ function renderPayPalButton() {
 
                   data: {
 
-                    squares:
-                      currentReservation.squares,
+                    selections:
+                      currentReservation.selections,
 
                     email:
                       currentReservation.email,
@@ -1387,8 +1276,8 @@ function renderPayPalButton() {
                       orderId:
                         data.orderID,
 
-                      squares:
-                        currentReservation.squares,
+                      selections:
+                        currentReservation.selections,
 
                       email:
                         currentReservation.email,
