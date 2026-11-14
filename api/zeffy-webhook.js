@@ -1079,6 +1079,88 @@ const squareAnswer =
 
 /*
 =====================================================
+WEEK 11 TWO-BOARD ZEFFY PAYMENT
+=====================================================
+*/
+async function processWeek11Payment(payment) {
+  const googleToken = await getGoogleAccessToken();
+  const config = BOARDS.regular11;
+  const spreadsheetId = getSpreadsheetId(config);
+  const paymentId = cleanText(payment?.id);
+  const status = normalizeStatus(payment?.status);
+  const currency = normalizeStatus(payment?.currency);
+  const email = normalizeStatus(payment?.buyer?.email);
+  const amountCents = Number(payment?.amount);
+  if (!paymentId || status !== "succeeded" || currency !== "usd" || !email || !Number.isInteger(amountCents) || amountCents <= 0) {
+    throw new Error("Week 11 Zeffy payment failed validation.");
+  }
+
+  async function readTab(tab) {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(tab + "!A2:L101")}`;
+    const response = await fetch(url, {headers: {Authorization: "Bearer " + googleToken}, cache: "no-store"});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error?.message || "Could not read " + tab);
+    return Array.from({length: 100}, (_, i) => {
+      const row = data?.values?.[i] || [];
+      return Array.from({length: 12}, (_, j) => row[j] || "");
+    });
+  }
+
+  const tabs = {1: "Squares", 2: "Squares 2"};
+  const rows = {1: await readTab(tabs[1]), 2: await readTab(tabs[2])};
+  for (const board of [1, 2]) {
+    if (rows[board].some(row => cleanText(row[8]) === paymentId && normalizeStatus(row[7]) === "paid")) {
+      return {success: true, alreadyProcessed: true, paymentId};
+    }
+  }
+
+  const groups = new Map();
+  for (const board of [1, 2]) {
+    rows[board].forEach((row, index) => {
+      if (normalizeStatus(row[1]) !== "pending" || normalizeStatus(row[3]) !== email || normalizeStatus(row[6]) !== "zeffy") return;
+      const reservationId = cleanText(row[11]);
+      if (!reservationId) throw new Error("Week 11 reservation ID missing; manual review required.");
+      if (!groups.has(reservationId)) groups.set(reservationId, []);
+      groups.get(reservationId).push({board, index, row});
+    });
+  }
+  if (groups.size !== 1) throw new Error("Week 11 Zeffy payment requires manual reservation review: " + groups.size + " matches.");
+  const selections = [...groups.values()][0];
+  const pricePerSquare = await getPricePerSquare(googleToken, config);
+  if (amountCents !== Math.round(selections.length * pricePerSquare * 100)) {
+    throw new Error("Week 11 Zeffy amount does not match the pending squares.");
+  }
+  const now = new Date().toISOString();
+  const updates = selections.map(({board, index, row}) => ({
+    range: `${tabs[board]}!B${index + 2}:L${index + 2}`,
+    values: [["Sold", row[2], row[3], row[4], row[5], "Zeffy", "Paid", paymentId, pricePerSquare, now, row[11]]]
+  }));
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {Authorization: "Bearer " + googleToken, "Content-Type": "application/json"},
+    body: JSON.stringify({valueInputOption: "RAW", data: updates})
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result?.error?.message || "Could not update Week 11 squares.");
+  return {success: true, paymentId, squares: selections.map(x => ({board: x.board, square: x.index + 1}))};
+}
+
+/* Verify Zeffy signature before trusting payment data. */
+function verifyZeffySignature(rawBody, header) {
+  const secret = process.env.ZEFFY_WEBHOOK_SECRET;
+  if (!secret) throw new Error("ZEFFY_WEBHOOK_SECRET is not configured.");
+  const fields = Object.fromEntries(String(header || "").split(",").map(part => part.trim().split("=")));
+  const timestamp = Number(fields.t);
+  if (!Number.isFinite(timestamp) || Math.abs(Date.now() / 1000 - timestamp) > 300) return false;
+  if (!/^[a-f0-9]{64}$/i.test(fields.v1 || "")) return false;
+  const expected = crypto.createHmac("sha256", secret).update(`${fields.t}.${rawBody}`).digest();
+  const actual = Buffer.from(fields.v1, "hex");
+  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+}
+
+/*
+=====================================================
 ZEFFY WEBHOOK
 =====================================================
 */
@@ -1115,16 +1197,11 @@ export default {
 
     try {
 
-      const body =
-        await request.json();
-
-
-      console.log(
-        "ZEFFY WEBHOOK RECEIVED:",
-        JSON.stringify(
-          body
-        )
-      );
+      const rawBody = await request.text();
+      if (!verifyZeffySignature(rawBody, request.headers.get("Zeffy-Signature"))) {
+        return Response.json({success: false, message: "Invalid Zeffy signature."}, {status: 401});
+      }
+      const body = JSON.parse(rawBody);
 
 
       /*
@@ -1249,11 +1326,9 @@ if (
       }
 
 
-      const result =
-        await processPayment(
-          payment,
-          matchedBoard.config
-        );
+      const result = matchedBoard.key === "regular11"
+        ? await processWeek11Payment(payment)
+        : await processPayment(payment, matchedBoard.config);
 
 
       console.log(
