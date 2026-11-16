@@ -131,26 +131,27 @@
   bottom: 5px;
   left: 0;
   font-size: 29px;
+  transform: scaleX(-1);
   animation: turkey-waddle 7s linear infinite;
 }
 
 @keyframes turkey-waddle {
   0% {
     left: -35px;
-    transform: rotate(-8deg);
+    transform: scaleX(-1) rotate(-8deg);
   }
   25% {
-    transform: rotate(8deg);
+    transform: scaleX(-1) rotate(8deg);
   }
   50% {
-    transform: rotate(-8deg);
+    transform: scaleX(-1) rotate(-8deg);
   }
   75% {
-    transform: rotate(8deg);
+    transform: scaleX(-1) rotate(8deg);
   }
   100% {
     left: 100%;
-    transform: rotate(-8deg);
+    transform: scaleX(-1) rotate(-8deg);
   }
 }
 
