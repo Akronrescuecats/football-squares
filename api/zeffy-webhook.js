@@ -513,6 +513,12 @@ function findBoard(
       gameAnswer
     );
 
+  if (normalized === "week 12: thanksgiving games") {
+  return {
+    key: "thanksgiving",
+    config: BOARDS.thanksgiving
+  };
+}
   const weekMatch = normalized.match(
   /^week\s*(1[0-7]|[1-9])(?:\b|:)/
 );
