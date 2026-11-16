@@ -1210,6 +1210,15 @@ route it directly to Season-Long.
 
 if (
   !matchedBoard &&
+  description.includes("holiday")
+) {
+  matchedBoard = {
+    key: "thanksgiving",
+    config: BOARDS.thanksgiving
+  };
+}      
+if (
+  !matchedBoard &&
   description.includes(
     "season long"
   )
