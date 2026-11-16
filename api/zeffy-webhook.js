@@ -13,6 +13,13 @@ BOARD DEFINITIONS
 
 const BOARDS = {
   
+    thanksgiving: {
+    spreadsheetEnv: "THANKSGIVING_SPREADSHEET_ID",
+    gameNames: [
+      "thanksgiving",
+      "thanksgiving special"
+    ]
+  },
   preseason1: {
     spreadsheetEnv: "PRESEASON_SPREADSHEET_ID",
     gameNames: [
