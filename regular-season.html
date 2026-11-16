@@ -103,6 +103,64 @@
       background: #002766;
     }
 
+/* THANKSGIVING FOOTBALL SQUARES */
+
+.thanksgiving-game {
+  background: #fff3e2;
+  border: 2px solid #f59e0b;
+}
+
+.thanksgiving-game .week {
+  color: #a94d00;
+}
+
+.thanksgiving-button {
+  position: relative;
+  overflow: hidden;
+  background: #e87500;
+  padding: 15px 12px 48px;
+  line-height: 1.5;
+}
+
+.thanksgiving-button:hover {
+  background: #c75f00;
+}
+
+.thanksgiving-button .turkey {
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  font-size: 29px;
+  animation: turkey-waddle 7s linear infinite;
+}
+
+@keyframes turkey-waddle {
+  0% {
+    left: -35px;
+    transform: rotate(-8deg);
+  }
+  25% {
+    transform: rotate(8deg);
+  }
+  50% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
+  }
+  100% {
+    left: 100%;
+    transform: rotate(-8deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thanksgiving-button .turkey {
+    animation: none;
+    left: 12px;
+  }
+}
+
     .sold-out,
 .coming-soon {
   background: #9ca3af;
@@ -382,6 +440,33 @@
 
 </div>
 
+
+<!-- THANKSGIVING FOOTBALL SQUARES -->
+
+<div class="game thanksgiving-game">
+
+  <div class="week">
+    THANKSGIVING SPECIAL • NOVEMBER 25–27
+  </div>
+
+  <div class="matchup">
+    🦃 Thanksgiving Football Squares
+  </div>
+
+  <p>
+    5 Games • 1 Board
+  </p>
+
+  <a
+    class="board-button thanksgiving-button"
+    href="/thanksgiving.html"
+  >
+    <strong>View Thanksgiving Board</strong>
+    <div>$50 Per Square</div>
+    <span class="turkey" aria-hidden="true">🦃</span>
+  </a>
+
+</div>
 
 <!-- WEEK 13 -->
 
