@@ -3,18 +3,18 @@
 
 <head>
 
-  <meta charset="UTF-8">
+ <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
+ <meta
+ name="viewport"
+ content="width=device-width, initial-scale=1"
   >
 
-  <title>
+ <title>
     Akron Rescue Cats Regular Season Football Squares
-  </title>
+ </title>
 
-  <style>
+ <style>
 
     * {
       box-sizing: border-box;
@@ -334,7 +334,7 @@
       }
     }
 
-  </style>
+ </style>
 
 </head>
 
@@ -342,90 +342,93 @@
 
 <div class="page">
 
-  <a
-    class="back-link"
-    href="/regular-season.html"
+ <a
+ class="back-link"
+ href="/regular-season.html"
   >
     ← Regular Season Boards
-  </a>
+ </a>
 
-  <h1>
+ <h1>
     Akron Rescue Cats
-  </h1>
+ </h1>
 
-  <p class="subtitle">
-    Regular Season — week 13
-  </p>
+ <p class="subtitle">
+    Regular Season — week 14
+ </p>
 
-  <div class="price-line">
+ <div class="price-line">
     $25 per square
-  </div>
+ </div>
 
-  <div id="payouts" class="price-line"></div>
+ <div id="payouts" class="price-line"></div>
 
-  <p class="instructions">
+ <p class="instructions">
     Tap every green square you would like.
     Selected squares turn blue.
     Your squares will be held for 15 minutes after reservation.
-  </p>
+ </p>
 
-  <div class="legend">
+ <div class="legend">
     🟩 Available &nbsp;&nbsp;
     🟦 Selected &nbsp;&nbsp;
     🟨 Pending &nbsp;&nbsp;
     🟥 Sold
-  </div>
+ </div>
 
-  <div class="selection-bar">
+ <div class="selection-bar">
 
-    <div
-      id="selectionSummary"
-      class="selection-summary"
+ <div
+ id="selectionSummary"
+ class="selection-summary"
     >
       No squares selected
-    </div>
+ </div>
 
-    <button
-      id="reserveButton"
-      class="reserve-button"
-      type="button"
-      disabled
-      onclick="openReservationModal()"
+ <button
+ id="reserveButton"
+ class="reserve-button"
+ type="button"
+ disabled
+ onclick="openReservationModal()"
     >
       Select Squares
-    </button>
+ </button>
 
-    <button
-      id="clearButton"
-      class="clear-button"
-      type="button"
-      style="display:none;"
-      onclick="clearSelections()"
+ <button
+ id="clearButton"
+ class="clear-button"
+ type="button"
+ style="display:none;"
+ onclick="clearSelections()"
     >
       Clear
-    </button>
+ </button>
 
-  </div>
+ </div>
 
-  <div id="loading" class="loading">
+ <div id="loading" class="loading">
     Loading board...
-  </div>
+ </div>
 
-  <div
-    id="error"
-    class="error"
-    style="display:none;"
+ <div
+ id="error"
+ class="error"
+ style="display:none;"
   ></div>
 
-  <div id="board" class="board"></div>
+ <h2>Board 1</h2>
+ <div id="board1" class="board"></div>
+ <h2>Board 2</h2>
+ <div id="board2" class="board"></div>
 
-  <button
-    type="button"
-    class="refresh-button"
-    onclick="loadBoard()"
+ <button
+ type="button"
+ class="refresh-button"
+ onclick="loadBoard()"
   >
     Refresh Board
-  </button>
+ </button>
 
 </div>
 
@@ -434,77 +437,77 @@
 
 <div id="reservationModal" class="modal">
 
-  <div class="modal-content">
+ <div class="modal-content">
 
-    <h2>
+ <h2>
       Reserve Selected Squares
-    </h2>
+ </h2>
 
-    <div
-      id="selectedList"
-      class="selected-list"
+ <div
+ id="selectedList"
+ class="selected-list"
     ></div>
 
-    <form id="reservationForm">
+ <form id="reservationForm">
 
-      <label for="buyerName">
+ <label for="buyerName">
         Name
-      </label>
+ </label>
 
-      <input
-        id="buyerName"
-        type="text"
-        required
+ <input
+ id="buyerName"
+ type="text"
+ required
       >
 
-      <label for="buyerEmail">
+ <label for="buyerEmail">
         Email
-      </label>
+ </label>
 
-      <input
-        id="buyerEmail"
-        type="email"
-        required
+ <input
+ id="buyerEmail"
+ type="email"
+ required
       >
 
-      <label for="buyerPhone">
+ <label for="buyerPhone">
         Phone
-      </label>
+ </label>
 
-      <input
-        id="buyerPhone"
-        type="tel"
-        required
+ <input
+ id="buyerPhone"
+ type="tel"
+ required
       >
 
-      <div
-        id="reservationMessage"
-        class="message"
+ <div
+ id="reservationMessage"
+ class="message"
       ></div>
 
-      <div class="button-row">
+ <div class="button-row">
 
-        <button
-          type="button"
-          class="cancel-button"
-          onclick="closeReservationModal()"
+ <button
+ type="button"
+ class="cancel-button"
+ onclick="closeReservationModal()"
         >
           Cancel
-        </button>
+ </button>
 
-        <button
-          id="submitReservationButton"
-          type="submit"
-          class="submit-button"
+ <button
+ id="submitReservationButton"
+ type="submit"
+ class="submit-button"
         >
           Continue to Payment
-        </button>
+ </button>
 
-      </div>
+ </div>
 
-    </form>
+ </form>
 
-  </div>
+ </div>
 
 </div>
 
@@ -513,67 +516,67 @@
 
 <div id="paymentModal" class="modal">
 
-  <div class="modal-content">
+ <div class="modal-content">
 
-    <h2>
+ <h2>
       Squares Reserved!
-    </h2>
+ </h2>
 
-    <div
-      id="paymentSummary"
-      class="selected-list"
+ <div
+ id="paymentSummary"
+ class="selected-list"
     ></div>
 
-    <div class="payment-note">
+ <div class="payment-note">
       Your squares are being held for
-      <strong>15 minutes</strong>.
+ <strong>15 minutes</strong>.
       Please complete payment before the hold expires.
-    </div>
+ </div>
 
-    <div class="payment-title">
+ <div class="payment-title">
       Pay automatically with PayPal
-    </div>
+ </div>
 
-    <div id="paypal-button-container"></div>
+ <div id="paypal-button-container"></div>
 
-    <div class="payment-title">
+ <div class="payment-title">
       Other Payment Options
-    </div>
+ </div>
 
-    <button
-      type="button"
-      class="payment-button zeffy"
-      onclick="choosePaymentMethod('zeffy')"
+ <button
+ type="button"
+ class="payment-button zeffy"
+ onclick="choosePaymentMethod('zeffy')"
     >
       Pay with Zeffy — Preferred
-    </button>
+ </button>
 
-    <button
-      type="button"
-      class="payment-button venmo"
-      onclick="choosePaymentMethod('venmo')"
+ <button
+ type="button"
+ class="payment-button venmo"
+ onclick="choosePaymentMethod('venmo')"
     >
       Pay with Venmo
-    </button>
+ </button>
 
-    <div
-      id="paymentStatus"
-      class="message"
+ <div
+ id="paymentStatus"
+ class="message"
     ></div>
 
-    <div class="button-row">
+ <div class="button-row">
 
-      <button
-        type="button"
-        class="cancel-button"
-        onclick="closePaymentModal()"
+ <button
+ type="button"
+ class="cancel-button"
+ onclick="closePaymentModal()"
       >
         Close
-      </button>
+ </button>
 
-    </div>
+ </div>
 
-  </div>
+ </div>
 
 </div>
 
@@ -581,14 +584,14 @@
 <!-- PAYPAL -->
 
 <script
-  src="https://www.paypal.com/sdk/js?client-id=AQ1WSxSGp7DG_e5Hvf8yvECA1ScYDu4rrKHrV3xxIYqaXl3V54Z-2N-W65IJimxAWcjd4Sn-NxPt5RZa&currency=USD&intent=capture">
+ src="https://www.paypal.com/sdk/js?client-id=AQ1WSxSGp7DG_e5Hvf8yvECA1ScYDu4rrKHrV3xxIYqaXl3V54Z-2N-W65IJimxAWcjd4Sn-NxPt5RZa&currency=USD&intent=capture">
 </script>
 
 
 <script>
 
 const PRICE_PER_SQUARE = 25;
-const API_URL = "/api/regular?week=13";
+const API_URL = "/api/regular-14";
 
 const PAYMENT_LINKS = {
 
@@ -600,7 +603,7 @@ const PAYMENT_LINKS = {
 };
 
 
-let currentSquares = [];
+let currentBoards = {1: [], 2: []};
 let selectedSquares = new Set();
 let currentReservation = null;
 
@@ -654,10 +657,11 @@ async function loadBoard() {
       );
     }
 
-    currentSquares =
-      Array.isArray(data.squares)
-        ? data.squares
-        : [];
+    currentBoards = {
+      1: Array.isArray(data.boards?.[1]?.squares) ? data.boards[1].squares : (data.squares || []),
+      2: Array.isArray(data.boards?.[2]?.squares) ? data.boards[2].squares : []
+    };
+    if (!data.boards?.[2]) throw new Error("Board 2 is not connected yet. Please try again later.");
 
     if (data.settings) {
 
@@ -707,165 +711,48 @@ BOARD
 =====================================================
 */
 
-function cleanSelections() {
-
-  const available =
-    new Set(
-      currentSquares
-        .filter(function(item) {
-          return (
-            String(
-              item.status ||
-              "Available"
-            ).toLowerCase() ===
-            "available"
-          );
-        })
-        .map(function(item) {
-          return Number(
-            item.square
-          );
-        })
-    );
-
-  Array
-    .from(selectedSquares)
-    .forEach(function(number) {
-
-      if (!available.has(number)) {
-        selectedSquares.delete(
-          number
-        );
-      }
-
-    });
+function selectionKey(board, square) { return `${board}:${square}`; }
+function getSelectedSquares() {
+  return Array.from(selectedSquares).map(key => {
+    const [board,square] = key.split(":").map(Number);
+    return {board,square};
+  }).sort((a,b)=>a.board-b.board || a.square-b.square);
 }
-
-
+function selectedDescription(items) { return items.map(x=>`Board ${x.board} #${x.square}`).join(", "); }
+function cleanSelections() {
+  for (const key of Array.from(selectedSquares)) {
+    const [board,square] = key.split(":").map(Number);
+    const item = currentBoards[board]?.find(x=>Number(x.square)===square);
+    if (!item || String(item.status||"").toLowerCase()!=="available") selectedSquares.delete(key);
+  }
+}
 function displayBoard() {
-
-  const board =
-    document.getElementById(
-      "board"
-    );
-
-  board.innerHTML = "";
-
-  currentSquares
-    .slice()
-    .sort(function(a, b) {
-      return (
-        Number(a.square) -
-        Number(b.square)
-      );
-    })
-    .forEach(function(item) {
-
-      const number =
-        Number(item.square);
-
-      const status =
-        String(
-          item.status ||
-          "Available"
-        ).toLowerCase();
-
-      const button =
-        document.createElement(
-          "button"
-        );
-
-      button.type = "button";
-
-      button.classList.add(
-        "square"
-      );
-
-      if (
-        status === "available" &&
-        selectedSquares.has(number)
-      ) {
-
-        button.classList.add(
-          "selected"
-        );
-
-      } else {
-
-        button.classList.add(
-          status
-        );
-      }
-
-      button.textContent =
-        number;
-
-      if (
-        status === "available"
-      ) {
-
-        button.onclick =
-          function() {
-            toggleSquare(
-              number
-            );
-          };
-
-      } else {
-
-        button.disabled = true;
-      }
-
-      board.appendChild(
-        button
-      );
-
+  for (const boardNumber of [1,2]) {
+    const board = document.getElementById(`board${boardNumber}`);
+    board.innerHTML = "";
+    currentBoards[boardNumber].slice().sort((a,b)=>Number(a.square)-Number(b.square)).forEach(item=>{
+      const number = Number(item.square);
+      const status = String(item.status||"Available").toLowerCase();
+      const key = selectionKey(boardNumber,number);
+      const button = document.createElement("button");
+      button.type="button";
+      button.classList.add("square", status==="available" && selectedSquares.has(key)?"selected":status);
+      button.textContent=number;
+      button.title=`Board ${boardNumber} square ${number}`;
+      if(status==="available") button.onclick=()=>toggleSquare(boardNumber,number);
+      else button.disabled=true;
+      board.appendChild(button);
     });
-
+  }
   updateSelectionSummary();
 }
-
-
-function toggleSquare(number) {
-
-  if (
-    selectedSquares.has(
-      number
-    )
-  ) {
-
-    selectedSquares.delete(
-      number
-    );
-
-  } else {
-
-    selectedSquares.add(
-      number
-    );
-  }
-
+function toggleSquare(board,number) {
+  const key=selectionKey(board,number);
+  if(selectedSquares.has(key)) selectedSquares.delete(key);
+  else selectedSquares.add(key);
   displayBoard();
 }
-
-
-function clearSelections() {
-
-  selectedSquares.clear();
-
-  displayBoard();
-}
-
-
-function getSelectedSquares() {
-
-  return Array
-    .from(selectedSquares)
-    .sort(function(a, b) {
-      return a - b;
-    });
-}
-
+function clearSelections() { selectedSquares.clear(); displayBoard(); }
 
 function updateSelectionSummary() {
 
@@ -961,7 +848,7 @@ function openReservationModal() {
     "selectedList"
   ).textContent =
     "Squares: " +
-    squares.join(", ") +
+    selectedDescription(squares) +
     " — Total: $" +
     total;
 
@@ -1045,7 +932,7 @@ document
 
                   data: {
 
-                    squares:
+                    selections:
                       squares,
 
                     name:
@@ -1106,7 +993,7 @@ document
           "paymentSummary"
         ).innerHTML =
           "<strong>Squares:</strong> " +
-          result.squares.join(", ") +
+          selectedDescription(result.selections) +
 
           "<br><strong>Price per square:</strong> $" +
           PRICE_PER_SQUARE +
@@ -1204,11 +1091,13 @@ async function choosePaymentMethod(
 
               data: {
 
-                squares:
-                  currentReservation.squares,
+                selections:
+                  currentReservation.selections,
 
                 email:
                   currentReservation.email,
+
+                reservationId: currentReservation.reservationId,
 
                 paymentMethod:
                   method
@@ -1320,8 +1209,8 @@ function renderPayPalButton() {
 
                   data: {
 
-                    squares:
-                      currentReservation.squares,
+                    selections:
+                      currentReservation.selections,
 
                     email:
                       currentReservation.email,
@@ -1387,8 +1276,8 @@ function renderPayPalButton() {
                       orderId:
                         data.orderID,
 
-                      squares:
-                        currentReservation.squares,
+                      selections:
+                        currentReservation.selections,
 
                       email:
                         currentReservation.email,
