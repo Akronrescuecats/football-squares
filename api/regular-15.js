@@ -2,6 +2,19 @@ import crypto from "crypto";
 
 const SHEET_NAME = "Squares";
 const SETTINGS_SHEET_NAME = "Settings";
+const BOARDS = { 1: { sheet: "Squares", settings: "Settings" }, 2: { sheet: "Squares 2", settings: "Settings 2" } };
+function boardId(value) { const id = Number(value); if (id !== 1 && id !== 2) throw new Error("Invalid board."); return id; }
+function boardItems(data) {
+  if (Array.isArray(data?.selections)) {
+    const seen = new Set();
+    return data.selections.map(x => ({ board: boardId(x.board), square: Number(x.square) })).filter(x => {
+      if (!Number.isInteger(x.square) || x.square < 1 || x.square > 100) throw new Error("Invalid square.");
+      const key = `${x.board}:${x.square}`; if (seen.has(key)) throw new Error("Duplicate square."); seen.add(key); return true;
+    });
+  }
+  return normalizeSquareList(data?.squares).map(square => ({board:1,square}));
+}
+function selectionLabel(items) { return items.map(x => `Board ${x.board} #${x.square}`).join(", "); }
 const CURRENCY_CODE = "USD";
 
 /*
@@ -185,13 +198,13 @@ B9 = Final Touch
 =====================================================
 */
 
-async function getSettings(token) {
+async function getSettings(token, board = 1) {
   const spreadsheetId =
     getSpreadsheetId();
 
   const range =
     encodeURIComponent(
-      `${SETTINGS_SHEET_NAME}!B2:B9`
+      `${BOARDS[boardId(board)].settings}!B2:B9`
     );
 
   const url =
@@ -321,13 +334,13 @@ READ SQUARES
 =====================================================
 */
 
-async function getAllRows(token) {
+async function getAllRows(token, board = 1) {
   const spreadsheetId =
     getSpreadsheetId();
 
   const range =
     encodeURIComponent(
-      `${SHEET_NAME}!A2:L101`
+      `${BOARDS[boardId(board)].sheet}!A2:L101`
     );
 
   const url =
@@ -556,8 +569,10 @@ RELEASE EXPIRED RESERVATIONS
 async function releaseExpiredReservations(
   token,
   rows,
-  holdMinutes
+  holdMinutes,
+  board = 1
 ) {
+  const sheetName = BOARDS[boardId(board)].sheet;
   const now =
     Date.now();
 
@@ -605,7 +620,7 @@ async function releaseExpiredReservations(
 
       updates.push({
         range:
-          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
+          `${sheetName}!B${sheetRow}:L${sheetRow}`,
 
         values: [[
           "Available",
@@ -638,176 +653,37 @@ RESERVE SQUARES
 =====================================================
 */
 
-async function reserveSquares(
-  token,
-  formData
-) {
-  if (!formData) {
-    throw new Error(
-      "Reservation information is missing."
-    );
+async function reserveSquares(token, formData) {
+  if (!formData) throw new Error("Reservation information is missing.");
+  const selections = boardItems(formData);
+  if (!selections.length) throw new Error("Please select squares.");
+  const name = String(formData.name || "").trim();
+  const email = String(formData.email || "").trim().toLowerCase();
+  const phone = String(formData.phone || "").trim();
+  if (!name || !email || !phone) throw new Error("Please enter your name, email, and phone number.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Please enter a valid email address.");
+  const settings = await getSettings(token, 1);
+  const secondSettings = await getSettings(token, 2);
+  if (settings.pricePerSquare !== secondSettings.pricePerSquare) throw new Error("Board prices differ; combined checkout is unavailable.");
+  const rows = {};
+  for (const board of [1,2]) {
+    rows[board] = await getAllRows(token, board);
+    await releaseExpiredReservations(token, rows[board], board === 1 ? settings.holdMinutes : secondSettings.holdMinutes, board);
+    rows[board] = await getAllRows(token, board);
   }
-
-  const settings =
-    await getSettings(
-      token
-    );
-
-  const squares =
-    normalizeSquareList(
-      formData.squares
-    );
-
-  const name =
-    String(
-      formData.name || ""
-    ).trim();
-
-  const email =
-    String(
-      formData.email || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const phone =
-    String(
-      formData.phone || ""
-    ).trim();
-
-  if (
-    !name ||
-    !email ||
-    !phone
-  ) {
-    throw new Error(
-      "Please enter your name, email, and phone number."
-    );
-  }
-
-  if (
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      .test(email)
-  ) {
-    throw new Error(
-      "Please enter a valid email address."
-    );
-  }
-
-  let rows =
-    await getAllRows(
-      token
-    );
-
-  await releaseExpiredReservations(
-    token,
-    rows,
-    settings.holdMinutes
-  );
-
-  rows =
-    await getAllRows(
-      token
-    );
-
-  const unavailable = [];
-
-  squares.forEach(
-    function(squareNumber) {
-
-      const row =
-        rows[
-          squareNumber - 1
-        ];
-
-      if (
-        normalizeStatus(
-          row[1]
-        ) !== "Available"
-      ) {
-        unavailable.push(
-          squareNumber
-        );
-      }
-    }
-  );
-
-  if (
-    unavailable.length > 0
-  ) {
-    throw new Error(
-      "These squares are no longer available: " +
-      unavailable.join(", ") +
-      ". Please choose again."
-    );
-  }
-
-  const reservedAt =
-    new Date()
-      .toISOString();
-
-  const reservationId =
-    crypto.randomUUID();
-
-  const updates = [];
-
-  squares.forEach(
-    function(squareNumber) {
-
-      const sheetRow =
-        squareNumber + 1;
-
-      updates.push({
-        range:
-          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
-
-        values: [[
-          "Pending",
-          name,
-          email,
-          phone,
-          reservedAt,
-          "",
-          "Awaiting Payment",
-          "",
-          "",
-          "",
-          reservationId
-        ]]
-      });
-    }
-  );
-
-  await batchUpdateRows(
-    token,
-    updates
-  );
-
-  return {
-    success: true,
-
-    squares,
-    name,
-    email,
-    phone,
-
-    quantity:
-      squares.length,
-
-    pricePerSquare:
-      settings.pricePerSquare,
-
-    total:
-      squares.length *
-      settings.pricePerSquare,
-
-    expiresInMinutes:
-      settings.holdMinutes,
-
-    reservationId,
-
-    settings
-  };
+  const unavailable = selections.filter(x => normalizeStatus(rows[x.board][x.square-1][1]) !== "Available");
+  if (unavailable.length) throw new Error("No longer available: " + selectionLabel(unavailable));
+  const reservedAt = new Date().toISOString();
+  const reservationId = crypto.randomUUID();
+  const updates = selections.map(x => ({
+    range: `${BOARDS[x.board].sheet}!B${x.square+1}:L${x.square+1}`,
+    values: [["Pending",name,email,phone,reservedAt,"","Awaiting Payment","","","",reservationId]]
+  }));
+  await batchUpdateRows(token, updates);
+  return {success:true, selections, squares:selections.map(x=>x.square), name,email,phone,
+    quantity:selections.length, pricePerSquare:settings.pricePerSquare,
+    total:selections.length*settings.pricePerSquare,
+    expiresInMinutes:Math.min(settings.holdMinutes,secondSettings.holdMinutes),reservationId,settings};
 }
 
 /*
@@ -951,120 +827,33 @@ VALIDATE PAYPAL RESERVATION
 =====================================================
 */
 
-async function validatePayPalReservation(
-  googleToken,
-  paymentData
-) {
-  const settings =
-    await getSettings(
-      googleToken
-    );
-
-  const email =
-    String(
-      paymentData?.email || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const reservationId =
-    String(
-      paymentData?.reservationId || ""
-    ).trim();
-
-  const squares =
-    normalizeSquareList(
-      paymentData?.squares
-    );
-
-  if (
-    !email ||
-    !reservationId
-  ) {
-    throw new Error(
-      "PayPal reservation information is incomplete."
-    );
+async function validatePayPalReservation(googleToken, paymentData) {
+  const email = String(paymentData?.email || "").trim().toLowerCase();
+  const reservationId = String(paymentData?.reservationId || "").trim();
+  const selections = boardItems(paymentData);
+  if (!email || !reservationId || !selections.length) throw new Error("PayPal reservation information is incomplete.");
+  const settings = await getSettings(googleToken, 1);
+  const settings2 = await getSettings(googleToken, 2);
+  if (settings.pricePerSquare !== settings2.pricePerSquare) throw new Error("Board prices do not match.");
+  const rows = {};
+  for (const board of [1,2]) {
+    rows[board] = await getAllRows(googleToken,board);
+    await releaseExpiredReservations(googleToken,rows[board],board===1?settings.holdMinutes:settings2.holdMinutes,board);
+    rows[board] = await getAllRows(googleToken,board);
   }
-
-  let rows =
-    await getAllRows(
-      googleToken
-    );
-
-  await releaseExpiredReservations(
-    googleToken,
-    rows,
-    settings.holdMinutes
-  );
-
-  rows =
-    await getAllRows(
-      googleToken
-    );
-
-  squares.forEach(
-    function(squareNumber) {
-
-      const row =
-        rows[
-          squareNumber - 1
-        ];
-
-      if (
-        normalizeStatus(
-          row[1]
-        ) !== "Pending"
-      ) {
-        throw new Error(
-          "Square " +
-          squareNumber +
-          " is no longer pending."
-        );
-      }
-
-      const reservedEmail =
-        String(
-          row[3] || ""
-        )
-          .trim()
-          .toLowerCase();
-
-      if (
-        reservedEmail !==
-        email
-      ) {
-        throw new Error(
-          "The reservation email does not match."
-        );
-      }
-
-      const savedReservationId =
-        String(
-          row[11] || ""
-        ).trim();
-
-      if (
-        savedReservationId !==
-        reservationId
-      ) {
-        throw new Error(
-          "The reservation ID does not match."
-        );
-      }
-    }
-  );
-
-  return {
-    rows,
-    squares,
-    email,
-    reservationId,
-    settings,
-
-    total:
-      squares.length *
-      settings.pricePerSquare
-  };
+  for (const x of selections) {
+    const row = rows[x.board][x.square-1];
+    if (normalizeStatus(row[1]) !== "Pending" || String(row[3]||"").trim().toLowerCase() !== email || String(row[11]||"").trim() !== reservationId)
+      throw new Error(`Board ${x.board} square ${x.square} is no longer reserved for this checkout.`);
+  }
+  // Ensure the checkout includes every square belonging to this reservation.
+  const all = [];
+  for (const board of [1,2]) rows[board].forEach((row,i)=>{
+    if (normalizeStatus(row[1]) === "Pending" && String(row[11]||"").trim() === reservationId) all.push(`${board}:${i+1}`);
+  });
+  const chosen = selections.map(x=>`${x.board}:${x.square}`);
+  if (all.length !== chosen.length || all.some(x=>!chosen.includes(x))) throw new Error("Reservation square list does not match.");
+  return {rows,selections,squares:selections.map(x=>x.square),email,reservationId,settings,total:selections.length*settings.pricePerSquare};
 }
 
 /*
@@ -1125,7 +914,7 @@ async function createPayPalOrder(
 
                 description:
                   "Akron Rescue Cats Regular Season Board 15 Football Squares: " +
-                  reservation.squares.join(", "),
+                  selectionLabel(reservation.selections),
 
                 amount: {
                   currency_code:
@@ -1298,10 +1087,7 @@ async function capturePayPalOrder(
     );
   }
 
-  const currentRows =
-    await getAllRows(
-      googleToken
-    );
+  const currentRows = [...await getAllRows(googleToken,1), ...await getAllRows(googleToken,2)];
 
   const alreadyPaid =
     currentRows.some(
@@ -1417,38 +1203,15 @@ async function capturePayPalOrder(
 
   const updates = [];
 
-  reservation.squares.forEach(
-    function(squareNumber) {
-
-      const row =
-        reservation.rows[
-          squareNumber - 1
-        ];
-
-      const sheetRow =
-        squareNumber + 1;
-
-      updates.push({
-        range:
-          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
-
-        values: [[
-          "Sold",
-          row[2] || "",
-          row[3] || "",
-          row[4] || "",
-          row[5] || "",
-          "PayPal",
-          "Paid",
-          orderId,
-          reservation.settings
-            .pricePerSquare,
-          paymentDate,
-          reservation.reservationId
-        ]]
-      });
-    }
-  );
+  reservation.selections.forEach(function(item) {
+    const row = reservation.rows[item.board][item.square - 1];
+    const sheetRow = item.square + 1;
+    updates.push({
+      range: `${BOARDS[item.board].sheet}!B${sheetRow}:L${sheetRow}`,
+      values: [["Sold",row[2]||"",row[3]||"",row[4]||"",row[5]||"","PayPal","Paid",orderId,
+        reservation.settings.pricePerSquare,paymentDate,reservation.reservationId]]
+    });
+  });
 
   await batchUpdateRows(
     googleToken,
@@ -1458,8 +1221,8 @@ async function capturePayPalOrder(
   return {
     success: true,
     orderId,
-    squares:
-      reservation.squares,
+    selections: reservation.selections,
+    squares: reservation.squares,
     amount:
       reservation.total
   };
@@ -1471,133 +1234,16 @@ ZEFFY / VENMO
 =====================================================
 */
 
-async function savePaymentMethod(
-  googleToken,
-  paymentData
-) {
-  const settings =
-    await getSettings(
-      googleToken
-    );
-
-  const email =
-    String(
-      paymentData?.email || ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const method =
-    String(
-      paymentData?.paymentMethod ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-  const squares =
-    normalizeSquareList(
-      paymentData?.squares
-    );
-
-  if (
-    method !== "zeffy" &&
-    method !== "venmo"
-  ) {
-    throw new Error(
-      "That payment method is not valid."
-    );
-  }
-
-  if (!email) {
-    throw new Error(
-      "Reservation email is missing."
-    );
-  }
-
-  let rows =
-    await getAllRows(
-      googleToken
-    );
-
-  await releaseExpiredReservations(
-    googleToken,
-    rows,
-    settings.holdMinutes
-  );
-
-  rows =
-    await getAllRows(
-      googleToken
-    );
-
-  const updates = [];
-
-  squares.forEach(
-    function(squareNumber) {
-
-      const row =
-        rows[
-          squareNumber - 1
-        ];
-
-      if (
-        normalizeStatus(
-          row[1]
-        ) !== "Pending"
-      ) {
-        throw new Error(
-          "Square " +
-          squareNumber +
-          " is no longer pending."
-        );
-      }
-
-      const reservedEmail =
-        String(
-          row[3] || ""
-        )
-          .trim()
-          .toLowerCase();
-
-      if (
-        reservedEmail !==
-        email
-      ) {
-        throw new Error(
-          "The reservation email does not match."
-        );
-      }
-
-      const sheetRow =
-        squareNumber + 1;
-
-      updates.push({
-        range:
-          `${SHEET_NAME}!G${sheetRow}:H${sheetRow}`,
-
-        values: [[
-          method === "zeffy"
-            ? "Zeffy"
-            : "Venmo",
-
-          "Payment Pending"
-        ]]
-      });
-    }
-  );
-
-  await batchUpdateRows(
-    googleToken,
-    updates
-  );
-
-  return {
-    success: true,
-    paymentMethod:
-      method,
-    squares
-  };
+async function savePaymentMethod(googleToken, paymentData) {
+  const method = String(paymentData?.paymentMethod||"").trim().toLowerCase();
+  if (!["zeffy","venmo"].includes(method)) throw new Error("Invalid payment method.");
+  const reservation = await validatePayPalReservation(googleToken,paymentData);
+  const updates = reservation.selections.map(x=>({
+    range:`${BOARDS[x.board].sheet}!G${x.square+1}:H${x.square+1}`,
+    values:[[method==="zeffy"?"Zeffy":"Venmo","Payment Pending"]]
+  }));
+  await batchUpdateRows(googleToken,updates);
+  return {success:true,paymentMethod:method,selections:reservation.selections};
 }
 
 /*
@@ -1729,10 +1375,8 @@ async function processZeffyCompletedPayment(
     );
   }
 
-  const rows =
-    await getAllRows(
-      googleToken
-    );
+  const boardRows = {1: await getAllRows(googleToken,1), 2: await getAllRows(googleToken,2)};
+  const rows = [...boardRows[1],...boardRows[2]];
 
   if (paymentId) {
     const alreadyProcessed =
@@ -1765,44 +1409,14 @@ async function processZeffyCompletedPayment(
 
   const matchingRows = [];
 
-  rows.forEach(
-    function(row, index) {
-
-      const status =
-        normalizeStatus(
-          row[1]
-        );
-
-      const rowEmail =
-        String(
-          row[3] || ""
-        )
-          .trim()
-          .toLowerCase();
-
-      const paymentMethod =
-        String(
-          row[6] || ""
-        )
-          .trim()
-          .toLowerCase();
-
-      if (
-        status === "Pending" &&
-        rowEmail === email &&
-        paymentMethod === "zeffy"
-      ) {
-        matchingRows.push({
-          index,
-          row,
-          reservationId:
-            String(
-              row[11] || ""
-            ).trim()
-        });
-      }
+  for (const board of [1,2]) boardRows[board].forEach(function(row,index) {
+    const status = normalizeStatus(row[1]);
+    const rowEmail = String(row[3]||"").trim().toLowerCase();
+    const method = String(row[6]||"").trim().toLowerCase();
+    if (status === "Pending" && rowEmail === email && method === "zeffy") {
+      matchingRows.push({board,index,row,reservationId:String(row[11]||"").trim()});
     }
-  );
+  });
 
   if (!matchingRows.length) {
     throw new Error(
@@ -1865,7 +1479,7 @@ async function processZeffyCompletedPayment(
 
       updates.push({
         range:
-          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
+          `${BOARDS[item.board].sheet}!B${sheetRow}:L${sheetRow}`,
 
         values: [[
           "Sold",
@@ -2063,32 +1677,15 @@ export default {
         "GET"
       ) {
 
-        let rows =
-          await getAllRows(
-            token
-          );
-
-        await releaseExpiredReservations(
-          token,
-          rows,
-          settings.holdMinutes
-        );
-
-        rows =
-          await getAllRows(
-            token
-          );
-
-        return Response.json({
-          success: true,
-
-          settings,
-
-          squares:
-            rowsToPublicSquares(
-              rows
-            )
-        });
+        const boards = {};
+        for (const board of [1,2]) {
+          const boardSettings = await getSettings(token,board);
+          let rows = await getAllRows(token,board);
+          await releaseExpiredReservations(token,rows,boardSettings.holdMinutes,board);
+          rows = await getAllRows(token,board);
+          boards[board] = {settings:boardSettings,squares:rowsToPublicSquares(rows)};
+        }
+        return Response.json({success:true,settings:boards[1].settings,squares:boards[1].squares,boards});
       }
 
       return Response.json(
