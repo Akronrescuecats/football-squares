@@ -622,12 +622,6 @@ const isBoardSoldOut = squares =>
 const soldOut = hasTwoBoards
   ? isBoardSoldOut(board1) && isBoardSoldOut(board2)
   : isBoardSoldOut(board1);
-      const soldOut =
-        squares.length === 100 &&
-        squares.every(
-          square =>
-            String(square.status || "").toLowerCase() === "sold"
-        );
 
       if (soldOut) {
         button.textContent = "SOLD OUT";
