@@ -3,6 +3,14 @@ import crypto from "crypto";
 
 const SHEET_NAME = "Squares";
 const SETTINGS_SHEET_NAME = "Settings";
+const TWO_BOARD_WEEKS = new Set([
+  "regular11",
+  "regular13",
+  "regular14",
+  "regular15",
+  "regular16",
+  "regular17"
+]);
 
 
 /*
@@ -582,7 +590,8 @@ READ SETTINGS
 
 async function getPricePerSquare(
   token,
-  board
+  board,
+  boardNumber = 1
 ) {
 
   const spreadsheetId =
@@ -592,8 +601,7 @@ async function getPricePerSquare(
 
   const range =
     encodeURIComponent(
-      `${SETTINGS_SHEET_NAME}!B2`
-    );
+`${boardNumber === 2 ? "'Settings 2'" : SETTINGS_SHEET_NAME}!B2`    );
 
   const url =
     "https://sheets.googleapis.com/v4/spreadsheets/" +
@@ -652,7 +660,8 @@ READ SQUARES
 
 async function getAllRows(
   token,
-  board
+  board,
+  boardNumber = 1
 ) {
 
   const spreadsheetId =
@@ -662,8 +671,7 @@ async function getAllRows(
 
   const range =
     encodeURIComponent(
-      `${SHEET_NAME}!A2:L101`
-    );
+`${boardNumber === 2 ? "'Squares 2'" : SHEET_NAME}!A2:L101`    );
 
   const url =
     "https://sheets.googleapis.com/v4/spreadsheets/" +
@@ -805,7 +813,8 @@ PROCESS ZEFFY PAYMENT
 
 async function processPayment(
   payment,
-  board
+  board,
+  boardNumber = 1
 ) {
 
   const googleToken =
@@ -889,7 +898,8 @@ const squareAnswer =
   const pricePerSquare =
     await getPricePerSquare(
       googleToken,
-      board
+      board,
+      boardNumber
     );
 
 
@@ -915,7 +925,8 @@ const squareAnswer =
   const rows =
     await getAllRows(
       googleToken,
-      board
+      board,
+      boardNumber
     );
 
 
@@ -923,18 +934,26 @@ const squareAnswer =
   Duplicate protection.
   */
 
-  const alreadyRecorded =
-    rows.some(
-      function(row) {
+  const hasTwoBoards = Object.entries(BOARDS).some(
+  ([key, config]) =>
+    config === board && TWO_BOARD_WEEKS.has(key)
+);
 
-        return (
-          cleanText(
-            row[8]
-          ) ===
-          paymentId
-        );
-      }
-    );
+let duplicateCheckRows = [...rows];
+
+if (hasTwoBoards) {
+  const otherBoardRows = await getAllRows(
+    googleToken,
+    board,
+    boardNumber === 1 ? 2 : 1
+  );
+
+  duplicateCheckRows.push(...otherBoardRows);
+}
+
+const alreadyRecorded = duplicateCheckRows.some(
+  row => cleanText(row[8]) === paymentId
+);
 
 
   if (
@@ -1034,8 +1053,7 @@ const squareAnswer =
       updates.push({
 
         range:
-          `${SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
-
+`${boardNumber === 2 ? "'Squares 2'" : SHEET_NAME}!B${sheetRow}:L${sheetRow}`,
         values: [[
 
           "Sold",
@@ -1262,11 +1280,45 @@ if (
       }
 
 
-      const result =
-        await processPayment(
-          payment,
-          matchedBoard.config
-        );
+      const boardAnswer =
+  findQuestionAnswer(
+    payment?.buyer_questions,
+    "select board number"
+  ) ||
+  findQuestionAnswer(
+    payment?.items?.[0]?.questions,
+    "select board number"
+  );
+
+const hasTwoBoards =
+  TWO_BOARD_WEEKS.has(matchedBoard.key);
+
+let boardNumber = 1;
+
+if (normalizeGameName(boardAnswer) === "board 2") {
+  if (!hasTwoBoards) {
+    throw new Error(
+      "Board 2 is not available for this game."
+    );
+  }
+
+  boardNumber = 2;
+
+} else if (
+  normalizeGameName(boardAnswer) !== "board 1" &&
+  (hasTwoBoards || boardAnswer)
+) {
+  throw new Error(
+    "Missing or invalid board selection. Manual review required."
+  );
+}
+
+const result =
+  await processPayment(
+    payment,
+    matchedBoard.config,
+    boardNumber
+  );
 
 
       console.log(
