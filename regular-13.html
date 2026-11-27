@@ -366,8 +366,16 @@
  <p class="instructions">
     Tap every green square you would like.
     Selected squares turn blue.
-    Your squares will be held for 15 minutes after reservation.
- </p>
+Your squares will be held for 15 minutes after reservation.
+<br><br>
+<strong>Paying with Zeffy?</strong>
+Please reserve squares from only one board at a time.
+Select the correct week and board number when completing
+your Zeffy payment, and use the same email address
+you entered when reserving your squares.
+<br><br>
+PayPal allows you to purchase squares from both boards
+in a single transaction. </p>
 
  <div class="legend">
     🟩 Available &nbsp;&nbsp;
@@ -1049,6 +1057,18 @@ async function choosePaymentMethod(
     return;
   }
 
+  const selectedBoards = new Set(
+    currentReservation.selections.map(
+      item => Number(item.board)
+    )
+  );
+
+  if (method === "zeffy" && selectedBoards.size > 1) {
+    document.getElementById("paymentStatus").textContent =
+      "Zeffy payments are limited to one board per transaction. Please use PayPal to pay for squares from both boards together.";
+    return;
+  }
+
   const paymentUrl =
     PAYMENT_LINKS[method];
 
@@ -1118,7 +1138,24 @@ async function choosePaymentMethod(
         "Payment method could not be saved."
       );
     }
+if (method === "zeffy") {
+  const board = currentReservation.selections[0].board;
 
+  const squares = currentReservation.selections
+    .map(item => item.square)
+    .join(", ");
+
+  paymentStatus.textContent =
+    "When completing your Zeffy payment, select Board " +
+    board +
+    ", enter square number(s): " +
+    squares +
+    ", and use the email address: " +
+    currentReservation.email;
+} else {
+  paymentStatus.textContent =
+    "Please complete your payment.";
+}
     if (paymentWindow) {
 
       paymentWindow.location.href =
