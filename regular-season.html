@@ -458,14 +458,9 @@
     5 Games • 1 Board
   </p>
 
-  <a
-    class="board-button thanksgiving-button"
-    href="/thanksgiving.html"
-  >
-    <strong>View Thanksgiving Board</strong>
-    <div>$50 Per Square</div>
-    <span class="turkey" aria-hidden="true">🦃</span>
-  </a>
+  <div class="board-button sold-out">
+  🦃 SOLD OUT 🦃
+</div>
 
 </div>
 
@@ -609,8 +604,24 @@ async function updateSoldOutButtons() {
       if (!response.ok) continue;
 
       const data = await response.json();
-      const squares = Array.isArray(data.squares) ? data.squares : [];
+const twoBoardWeeks = [11, 13, 14, 15, 16, 17];
 
+const hasTwoBoards = twoBoardWeeks.includes(Number(week));
+
+const board1 = data.boards?.[1]?.squares || data.squares || [];
+const board2 = data.boards?.[2]?.squares || [];
+
+const isBoardSoldOut = squares =>
+  Array.isArray(squares) &&
+  squares.length === 100 &&
+  squares.every(
+    square =>
+      String(square.status || "").trim().toLowerCase() === "sold"
+  );
+
+const soldOut = hasTwoBoards
+  ? isBoardSoldOut(board1) && isBoardSoldOut(board2)
+  : isBoardSoldOut(board1);
       const soldOut =
         squares.length === 100 &&
         squares.every(
